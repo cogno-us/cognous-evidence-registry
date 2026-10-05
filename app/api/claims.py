@@ -85,7 +85,10 @@ def update_claim(claim_id: str, update: ClaimUpdate):
     Raises:
         HTTPException: 404 if claim not found
     """
-    claim = claims_service.update_claim(claim_id, update)
+    try:
+        claim = claims_service.update_claim(claim_id, update)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if not claim:
         raise HTTPException(status_code=404, detail="Claim not found")
     return claim
@@ -102,7 +105,10 @@ def delete_claim(claim_id: str):
     Raises:
         HTTPException: 404 if claim not found
     """
-    success = claims_service.delete_claim(claim_id)
+    try:
+        success = claims_service.delete_claim(claim_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if not success:
         raise HTTPException(status_code=404, detail="Claim not found")
 

@@ -10,6 +10,7 @@ Protocol Invariants:
 - Claims MUST have subject-predicate-object semantic structure
 """
 
+from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import uuid4
@@ -26,6 +27,7 @@ class ClaimStore:
     def __init__(self):
         """Initialize the in-memory claim store."""
         self._claims: Dict[str, Dict] = {}
+        self._status_events: List[Dict] = []
         self._claims_by_contributor: Dict[str, List[str]] = {}
         self._claims_by_domain: Dict[str, List[str]] = {}
 
@@ -43,7 +45,7 @@ class ClaimStore:
             ValueError: If claim violates protocol invariants
         """
         # Create a copy to avoid mutating the input
-        claim = claim.copy()
+        claim = deepcopy(claim)
         
         # Validate protocol invariants
         self._validate_invariants(claim)
@@ -98,7 +100,7 @@ class ClaimStore:
         Returns:
             Claim dictionary if found, None otherwise
         """
-        return self._claims.get(claim_id)
+        return deepcopy(self._claims.get(claim_id))
 
     def list_by_contributor(self, contributor_id: str) -> List[Dict]:
         """
@@ -111,7 +113,7 @@ class ClaimStore:
             List of claim dictionaries
         """
         claim_ids = self._claims_by_contributor.get(contributor_id, [])
-        return [self._claims[cid] for cid in claim_ids if cid in self._claims]
+        return [deepcopy(self._claims[cid]) for cid in claim_ids if cid in self._claims]
 
     def list_by_domain(self, domain: str) -> List[Dict]:
         """
@@ -124,7 +126,7 @@ class ClaimStore:
             List of claim dictionaries
         """
         claim_ids = self._claims_by_domain.get(domain, [])
-        return [self._claims[cid] for cid in claim_ids if cid in self._claims]
+        return [deepcopy(self._claims[cid]) for cid in claim_ids if cid in self._claims]
 
     def list_by_status(self, status: str) -> List[Dict]:
         """
@@ -136,7 +138,7 @@ class ClaimStore:
         Returns:
             List of claim dictionaries
         """
-        return [claim for claim in self._claims.values() if claim.get("status") == status]
+        return [deepcopy(claim) for claim in self._claims.values() if claim.get("status") == status]
 
     def update_status(self, claim_id: str, new_status: str) -> bool:
         """
@@ -156,9 +158,15 @@ class ClaimStore:
         if new_status not in valid_statuses:
             raise ValueError(f"Invalid status: {new_status}")
         
+        self._status_events.append({"claim_id": claim_id, "previous": deepcopy(self._claims[claim_id]),
+                                    "status": new_status, "policy": "legacy-unverified-status/1"})
         self._claims[claim_id]["status"] = new_status
         self._claims[claim_id]["updated_at"] = datetime.utcnow().isoformat()
         return True
+
+    def status_history(self, claim_id: str) -> List[Dict]:
+        """Legacy local events; not authenticated protocol outcomes."""
+        return deepcopy([e for e in self._status_events if e["claim_id"] == claim_id])
 
     def _validate_invariants(self, claim: Dict) -> None:
         """

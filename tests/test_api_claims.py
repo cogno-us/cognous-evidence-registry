@@ -74,10 +74,10 @@ def test_update_claim_endpoint(client, sample_claim_data):
     update_data = {"canonical_text": "Updated claim text", "status": "supported"}
     response = client.put(f"/api/v1/claims/{claim_id}", json=update_data)
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["canonical_text"] == "Updated claim text"
-    assert data["status"] == "supported"
+    assert response.status_code == 409
+    data = client.get(f"/api/v1/claims/{claim_id}").json()
+    assert data["canonical_text"] == sample_claim_data["canonical_text"]
+    assert data["status"] == "proposed"
 
 
 def test_delete_claim_endpoint(client, sample_claim_data):
@@ -88,11 +88,11 @@ def test_delete_claim_endpoint(client, sample_claim_data):
 
     # Delete the claim
     response = client.delete(f"/api/v1/claims/{claim_id}")
-    assert response.status_code == 204
+    assert response.status_code == 409
 
-    # Verify it's deleted
+    # Verify accepted history is still readable
     get_response = client.get(f"/api/v1/claims/{claim_id}")
-    assert get_response.status_code == 404
+    assert get_response.status_code == 200
 
 
 def test_search_claims_endpoint(client, sample_claim_data):

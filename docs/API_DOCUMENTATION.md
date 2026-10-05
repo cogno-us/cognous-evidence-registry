@@ -1,3 +1,8 @@
+> **Legacy API:** process-local, non-authoritative for blockchain state. Existing
+> claim PUT/DELETE now return 409 to preserve accepted history. Use the local
+> [blockchain protocol](../chain/README.md) for explicit revisions/lifecycle events.
+> Legacy identity strings and scores do not establish BitRep verification.
+
 # API Documentation
 
 The Index provides a RESTful API for managing claims, evidence, links, and governance proposals.
