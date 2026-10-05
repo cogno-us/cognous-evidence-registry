@@ -1,3 +1,8 @@
+> **Legacy design specification.** This document is preserved for history. It does
+> not establish implemented decentralization, BitRep reputation or cryptographic
+> assurance. The bounded blockchain reference profile and explicit divergences are
+> in [chain/PROTOCOL.md](../chain/PROTOCOL.md).
+
 # INDEX_ARCHITECTURE.md
 ## The Index — A Normative Protocol Specification for Verifiable Scientific Knowledge
 

@@ -47,7 +47,7 @@ class ClaimsService:
             updated_at=datetime.utcnow(),
         )
 
-        self._claims[claim_id] = claim
+        self._claims[claim_id] = claim.model_copy(deep=True)
         return claim
 
     def get_claim(self, claim_id: str) -> Optional[Claim]:
@@ -60,7 +60,8 @@ class ClaimsService:
         Returns:
             The claim if found, None otherwise
         """
-        return self._claims.get(claim_id)
+        claim = self._claims.get(claim_id)
+        return claim.model_copy(deep=True) if claim else None
 
     def list_claims(
         self,
@@ -90,7 +91,7 @@ class ClaimsService:
             claims = [c for c in claims if domain in c.domains]
 
         # Apply pagination
-        return claims[offset : offset + limit]
+        return [c.model_copy(deep=True) for c in claims[offset : offset + limit]]
 
     def update_claim(self, claim_id: str, update_data: ClaimUpdate) -> Optional[Claim]:
         """
@@ -107,28 +108,13 @@ class ClaimsService:
         if not claim:
             return None
 
-        # Update fields if provided
-        update_dict = update_data.model_dump(exclude_unset=True)
-        for field, value in update_dict.items():
-            setattr(claim, field, value)
-
-        claim.updated_at = datetime.utcnow()
-        return claim
+        raise ValueError("Accepted claim history is immutable; use an explicit protocol revision")
 
     def delete_claim(self, claim_id: str) -> bool:
-        """
-        Delete a claim.
-
-        Args:
-            claim_id: The claim identifier
-
-        Returns:
-            True if deleted, False if not found
-        """
-        if claim_id in self._claims:
-            del self._claims[claim_id]
-            return True
-        return False
+        """Deletion is disabled; blockchain lifecycle events preserve history."""
+        if claim_id not in self._claims:
+            return False
+        raise ValueError("Accepted claim history cannot be deleted; use protocol withdrawal")
 
     def search_claims(self, query: str, limit: int = 100) -> List[Claim]:
         """
@@ -145,7 +131,7 @@ class ClaimsService:
         results = [
             claim for claim in self._claims.values() if query_lower in claim.canonical_text.lower()
         ]
-        return results[:limit]
+        return [c.model_copy(deep=True) for c in results[:limit]]
 
 
 # Global service instance

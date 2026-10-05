@@ -2,6 +2,8 @@
 Unit tests for the Claims service.
 """
 
+import pytest
+
 from app.core.models import ClaimCreate, ClaimStatus, ClaimUpdate
 
 
@@ -52,13 +54,10 @@ def test_list_claims_with_status_filter(claims_service, sample_claim_data):
     claim_data = ClaimCreate(**sample_claim_data)
     claim = claims_service.create_claim(claim_data)
 
-    # Update status
-    update = ClaimUpdate(status=ClaimStatus.SUPPORTED)
-    claims_service.update_claim(claim.id, update)
-
-    supported_claims = claims_service.list_claims(status=ClaimStatus.SUPPORTED)
-    assert len(supported_claims) == 1
-    assert supported_claims[0].status == ClaimStatus.SUPPORTED
+    with pytest.raises(ValueError):
+        claims_service.update_claim(claim.id, ClaimUpdate(status=ClaimStatus.SUPPORTED))
+    assert claims_service.list_claims(status=ClaimStatus.SUPPORTED) == []
+    assert len(claims_service.list_claims(status=ClaimStatus.PROPOSED)) == 1
 
 
 def test_list_claims_with_domain_filter(claims_service, sample_claim_data):
@@ -77,11 +76,9 @@ def test_update_claim(claims_service, sample_claim_data):
     claim = claims_service.create_claim(claim_data)
 
     update = ClaimUpdate(canonical_text="Updated claim text", status=ClaimStatus.SUPPORTED)
-    updated_claim = claims_service.update_claim(claim.id, update)
-
-    assert updated_claim is not None
-    assert updated_claim.canonical_text == "Updated claim text"
-    assert updated_claim.status == ClaimStatus.SUPPORTED
+    with pytest.raises(ValueError):
+        claims_service.update_claim(claim.id, update)
+    assert claims_service.get_claim(claim.id) == claim
 
 
 def test_update_nonexistent_claim(claims_service):
@@ -96,12 +93,9 @@ def test_delete_claim(claims_service, sample_claim_data):
     claim_data = ClaimCreate(**sample_claim_data)
     claim = claims_service.create_claim(claim_data)
 
-    success = claims_service.delete_claim(claim.id)
-    assert success is True
-
-    # Verify claim is deleted
-    retrieved = claims_service.get_claim(claim.id)
-    assert retrieved is None
+    with pytest.raises(ValueError):
+        claims_service.delete_claim(claim.id)
+    assert claims_service.get_claim(claim.id) == claim
 
 
 def test_delete_nonexistent_claim(claims_service):
@@ -125,3 +119,18 @@ def test_search_claims(claims_service, sample_claim_data):
     results = claims_service.search_claims("quantum")
     assert len(results) == 1
     assert "quantum" in results[0].canonical_text.lower()
+
+
+def test_no_mutable_claim_aliases(claims_service, sample_claim_data):
+    original = claims_service.create_claim(ClaimCreate(**sample_claim_data))
+    expected = original.model_copy(deep=True)
+    for claim in [
+        original,
+        claims_service.get_claim(original.id),
+        claims_service.list_claims()[0],
+        claims_service.search_claims("Quantum")[0],
+    ]:
+        claim.canonical_text = "tampered"
+        claim.domains.append("tampered")
+        claim.semantic_representation["subject"] = "tampered"
+    assert claims_service.get_claim(original.id) == expected

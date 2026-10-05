@@ -507,3 +507,23 @@ class TestCanonicalExamples:
         retrieved_link = get_link(link_id)
         assert retrieved_link is not None
         assert retrieved_link["relation_type"] == "supports"
+
+
+def test_alternate_claim_store_preserves_history_and_nested_bytes():
+    """Legacy status observations retain prior state; callers cannot mutate via aliases."""
+    from api.claim_layer import ClaimStore
+    store = ClaimStore()
+    original = {"subject": "sample", "predicate": "is", "object": "synthetic",
+                "contributor_id": "unverified:legacy", "justification": "fixture",
+                "evidence_refs": ["evidence_original"]}
+    claim_id = store.store(original)
+    original["evidence_refs"].append("tamper")
+    returned = store.retrieve(claim_id)
+    returned["evidence_refs"].append("tamper")
+    assert store.retrieve(claim_id)["evidence_refs"] == ["evidence_original"]
+    store.update_status(claim_id, "contested")
+    store.update_status(claim_id, "supported")
+    history = store.status_history(claim_id)
+    assert [e["previous"]["status"] for e in history] == ["proposed", "contested"]
+    history[0]["previous"]["evidence_refs"].append("tamper")
+    assert store.status_history(claim_id)[0]["previous"]["evidence_refs"] == ["evidence_original"]

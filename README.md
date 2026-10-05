@@ -8,15 +8,23 @@
 
 ## Overview
 
-The Index is a protocol and reference implementation for representing, linking, and evaluating verifiable scientific knowledge. Built on the BitRep identity substrate, The Index provides a structured, reputation-weighted system for scientific claims, evidence, and epistemic relationships in a transparent and decentralized manner.
+> **Implementation status:** The decentralized blockchain target now has a bounded
+> [local reference protocol](chain/README.md). Its contract is authoritative for
+> registration, evidence commitments and lifecycle events; it does not periodically
+> anchor a centrally authoritative database. No public deployment has occurred.
+> BitRep issuer verification is independently reproducible off-chain, not enforced
+> by the contract. The existing FastAPI/legacy stores remain non-authoritative demos.
+> See [audit and trust boundaries](chain/PROTOCOL.md) and [tests](chain/VALIDATION.md).
+
+The Index is a protocol and reference implementation for representing, linking, and evaluating verifiable scientific knowledge. The target architecture is a decentralized blockchain protocol for claims, evidence commitments, revisions and challenges. The local reference slice separates blockchain inclusion, wallet attribution, BitRep issuer-signature assurance and epistemic judgments.
 
 ### Key Features
 
 - **Structured Claims**: Atomic scientific statements with semantic representation (subject-predicate-object)
 - **Evidence Linking**: Connect claims to empirical or theoretical support with explicit relation types
 - **Epistemic Status**: Computed assessment of claim standing based on weighted evidence
-- **BitRep Integration**: Cryptographic identity, attestation, and reputation weighting
-- **Governance**: Community-driven protocol evolution through decentralized mechanisms
+- **BitRep Integration**: Pinned v1 off-chain issuer-signature verification; no BitRep reputation score or on-chain verification bridge
+- **Governance**: Reference contracts have no upgrade administrator; production governance remains a review decision
 - **Protocol Invariants**: Enforced requirements ensuring data integrity and verifiability
 
 ---
@@ -72,7 +80,7 @@ The Index aims to create a global, machine-readable, human-verifiable map of sci
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/clarity-index/the-index.git
+git clone https://github.com/cogno-us/the-index.git
 cd the-index
 ```
 
@@ -147,7 +155,7 @@ Computed deterministically from:
 
 ## Normative Specification
 
-**The authoritative protocol specification is [docs/roadmap-internal-notes.md](docs/roadmap-internal-notes.md).**
+**The blockchain prototype is specified in [chain/PROTOCOL.md](chain/PROTOCOL.md). The [legacy specification](docs/roadmap-internal-notes.md) describes older intended behavior and is not a statement of implemented blockchain or BitRep guarantees.**
 
 This README provides an overview and quick reference. For complete requirements, protocol invariants, and implementation guidelines, refer to the normative specification document which defines:
 
@@ -158,13 +166,13 @@ This README provides an overview and quick reference. For complete requirements,
 - Ontology versioning and resolution
 - Deterministic epistemic computation algorithms
 
-In case of any discrepancies between this README and the normative specification, the normative specification takes precedence.
+For the blockchain reference slice, `chain/PROTOCOL.md` and its contract define the bounded profile; unsupported legacy reputation/governance requirements are not silently inherited.
 
 ---
 
 ## Protocol Invariants
 
-**The Index enforces strict protocol invariants to maintain data integrity and verifiability:**
+**Legacy intended invariants (not all enforced by the legacy API; see the audit):**
 
 1. **Claims Immutability**: Claims MUST be immutable after acceptance (except for status updates via epistemic computation)
 2. **Evidence Immutability**: Evidence objects MUST be immutable after creation
@@ -310,8 +318,8 @@ The Index is built on the BitRep identity and reputation substrate. Special than
 
 ## Contact
 
-- **GitHub Issues**: [https://github.com/clarity-index/the-index/issues](https://github.com/clarity-index/the-index/issues)
-- **Discussions**: [https://github.com/clarity-index/the-index/discussions](https://github.com/clarity-index/the-index/discussions)
+- **GitHub Issues**: [https://github.com/cogno-us/the-index/issues](https://github.com/cogno-us/the-index/issues)
+- **Discussions**: [https://github.com/cogno-us/the-index/discussions](https://github.com/cogno-us/the-index/discussions)
 
 ---
 
