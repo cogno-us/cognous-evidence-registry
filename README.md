@@ -2,7 +2,7 @@
 
 **A Protocol for Verifiable Scientific Knowledge**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 ---
 
@@ -306,7 +306,7 @@ For the complete normative specification, see [roadmap-internal-notes.md](docs/r
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Apache License 2.0 applies to Cognous-owned material. See [LICENSE](LICENSE) and [NOTICE](NOTICE). Prior MIT notices are retained in [LICENSES/MIT.txt](LICENSES/MIT.txt).
 
 ---
 
