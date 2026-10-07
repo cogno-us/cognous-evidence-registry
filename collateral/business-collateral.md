@@ -1,8 +1,8 @@
-# The Index — Business Collateral
+# Cognous Evidence Registry — Business Collateral
 
 ## 1. Executive Summary
 
-A protocol and reference implementation for registering scientific claims, linking evidence commitments and preserving revision/lifecycle history. The accepted bounded slice makes the local blockchain contract authoritative for those records and uses BitRep verification independently off-chain.
+A protocol and reference implementation for registering scientific claims, linking evidence commitments and preserving revision/lifecycle history. The accepted bounded slice makes the local blockchain contract authoritative for those records and uses Cognous Evidence Attestation verification independently off-chain.
 
 ## 2. The Business Problem
 
@@ -16,7 +16,7 @@ A claim registry should distinguish who registered a record, what exact evidence
 | Evidence relationships | Link supporting and contradicting evidence commitments without converting a vote or duplicate content into truth. |
 | Revision and lifecycle | Preserve prior content through revisions, withdrawal and supersession with explicit ownership rules. |
 | Read-only reconstruction | Rebuild visible state and event history through an indexer with documented provisional/reorganization handling. |
-| BitRep binding | Recompute content bindings and verify issuer signatures off-chain with the exact accepted verifier revision. |
+| Cognous Evidence Attestation binding | Recompute content bindings and verify issuer signatures off-chain with the exact accepted verifier revision. |
 
 ## 4. Who Should Evaluate It
 
@@ -24,7 +24,7 @@ Engineers can inspect the reference contracts and examples; enterprise architect
 
 ## 5. A Bounded Workflow
 
-A researcher registers a claim commitment on the local chain and attaches an evidence commitment. An independent reader reconstructs the record, retrieves the expected evidence bytes and checks the signed statement with BitRep. Wallet attribution, chain inclusion, issuer-signature assurance and the scientific interpretation remain separately labeled. Withdrawal or supersession preserves history instead of silently replacing it.
+A researcher registers a claim commitment on the local chain and attaches an evidence commitment. An independent reader reconstructs the record, retrieves the expected evidence bytes and checks the signed statement with Cognous Evidence Attestation. Wallet attribution, chain inclusion, issuer-signature assurance and the scientific interpretation remain separately labeled. Withdrawal or supersession preserves history instead of silently replacing it.
 
 This is a reference use case. Adopting the format or running the example does not establish a production deployment, institutional acceptance or measured business benefit.
 
@@ -36,13 +36,13 @@ A valid signature, chain inclusion, message receipt, reasoning instruction or ev
 
 ## 7. What the Evidence Supports
 
-The hub selects local blockchain reference `d5e45d275cb301d9684b543e93b05997991d1cf2`. The [local validation record](../chain/VALIDATION.md) distinguishes executed protocol/BitRep cases, legacy regressions and untested production behavior. The normative boundary for this slice is [chain/PROTOCOL.md](../chain/PROTOCOL.md); legacy intended specifications do not silently add guarantees.
+The hub selects local blockchain reference `d5e45d275cb301d9684b543e93b05997991d1cf2`. The [local validation record](../chain/VALIDATION.md) distinguishes executed protocol/Cognous Evidence Attestation cases, legacy regressions and untested production behavior. The normative boundary for this slice is [chain/PROTOCOL.md](../chain/PROTOCOL.md); legacy intended specifications do not silently add guarantees.
 
 The [accepted hub evidence](https://github.com/cogno-us/cognous-open-control-stack/blob/5737267d94d2b445735c95e8480a31de73a2abe8/examples/control-plane-store-adoption/qualification-summary.json) supports bounded synthetic integration at its exact pins. Aggregate test totals do not establish deployment benefit, compliance or independent real-world verification. The [support ledger](https://github.com/cogno-us/cognous-open-control-stack/blob/main/docs/release-status.md) distinguishes the standard reference, separate protected-worker campaign and unqualified production work.
 
 ## 8. What It Does Not Establish
 
-No public-chain deployment, audited production contract, remote consensus finality, authenticated RPC proof or on-chain BitRep verification bridge is established. The legacy FastAPI/store surfaces are non-authoritative demonstrations. Legacy reputation-weighting and epistemic-scoring goals are not implemented blockchain guarantees.
+No public-chain deployment, audited production contract, remote consensus finality, authenticated RPC proof or on-chain Cognous Evidence Attestation verification bridge is established. The legacy FastAPI/store surfaces are non-authoritative demonstrations. Legacy reputation-weighting and epistemic-scoring goals are not implemented blockchain guarantees.
 
 ## 9. Evaluation Questions
 

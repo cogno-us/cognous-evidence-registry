@@ -350,7 +350,7 @@ Security researchers who have contributed to The Index's security:
 - [OWASP Security Guidelines](https://owasp.org/)
 - [CWE Top 25](https://cwe.mitre.org/top25/)
 - [NIST Framework](https://www.nist.gov/cyberframework)
-- [BitRep Security Model](https://bitrep.example.com/security) (TBD)
+- [Cognous Evidence Attestation Security Model](https://bitrep.example.com/security) (TBD)
 
 ---
 
