@@ -32,8 +32,8 @@ This guide will help you set up your development environment for contributing to
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/clarity-index/the-index.git
-cd the-index
+git clone https://github.com/cogno-us/cognous-evidence-registry.git
+cd cognous-evidence-registry
 ```
 
 ### 2. Create Virtual Environment
@@ -454,9 +454,9 @@ pip install -r requirements-dev.txt
 
 ## Getting Help
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/clarity-index/the-index/issues)
-- **Discussions**: [Ask questions](https://github.com/clarity-index/the-index/discussions)
-- **Documentation**: [Read the docs](https://github.com/clarity-index/the-index/docs)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/cogno-us/cognous-evidence-registry/issues)
+- **Discussions**: [Ask questions](https://github.com/cogno-us/cognous-evidence-registry/discussions)
+- **Documentation**: [Read the docs](https://github.com/cogno-us/cognous-evidence-registry/docs)
 
 ## Next Steps
 

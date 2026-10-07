@@ -48,8 +48,8 @@ The Index provides a structured, transparent system for:
 
 ```bash
 # Clone the repository
-git clone https://github.com/clarity-index/the-index.git
-cd the-index
+git clone https://github.com/cogno-us/cognous-evidence-registry.git
+cd cognous-evidence-registry
 
 # Create virtual environment
 python -m venv venv
@@ -284,14 +284,14 @@ If you use The Index in your research, please cite:
   title = {The Index: A Protocol for Verifiable Scientific Knowledge},
   author = {The Index Contributors},
   year = {2024},
-  url = {https://github.com/clarity-index/the-index}
+  url = {https://github.com/cogno-us/cognous-evidence-registry}
 }
 ```
 
 ## Contact
 
-- GitHub Issues: [https://github.com/clarity-index/the-index/issues](https://github.com/clarity-index/the-index/issues)
-- Discussions: [https://github.com/clarity-index/the-index/discussions](https://github.com/clarity-index/the-index/discussions)
+- GitHub Issues: [https://github.com/cogno-us/cognous-evidence-registry/issues](https://github.com/cogno-us/cognous-evidence-registry/issues)
+- Discussions: [https://github.com/cogno-us/cognous-evidence-registry/discussions](https://github.com/cogno-us/cognous-evidence-registry/discussions)
 
 ## Acknowledgments
 
