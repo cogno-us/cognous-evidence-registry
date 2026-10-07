@@ -158,7 +158,7 @@ identify their responsible institution and policy separately from protocol inclu
 
 ## BitRep integration and exact blocked boundary
 
-Pinned repository: `cogno-us/bitrep`, commit
+Pinned repository: `cogno-us/cognous-evidence-attestation`, commit
 `5b5077dafde232a7801cb425c4efddcffb468723`. Read/used:
 `docs/VERIFICATION_CONTRACT_V1.md`, `models/verification.py`,
 `utils/verification.py`, `utils/trust.py`, `tests/fixtures/verification-v1.json`.

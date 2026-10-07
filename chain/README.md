@@ -15,7 +15,7 @@ but was not tested in this run):
 ```bash
 python -m pip install -r requirements-dev.txt
 # Outside this repository; read-only dependency checkout, never production keys.
-git clone https://github.com/cogno-us/bitrep.git ../bitrep
+git clone https://github.com/cogno-us/cognous-evidence-attestation.git ../bitrep
 git -C ../bitrep checkout --detach 5b5077dafde232a7801cb425c4efddcffb468723
 export BITREP_ROOT="$(cd ../bitrep && pwd)"
 cd chain
