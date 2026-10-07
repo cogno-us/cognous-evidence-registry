@@ -1,8 +1,8 @@
-# The Index — One-Page Overview
+# Cognous Evidence Registry — One-Page Overview
 
 ## Purpose
 
-A protocol and reference implementation for registering scientific claims, linking evidence commitments and preserving revision/lifecycle history. The accepted bounded slice makes the local blockchain contract authoritative for those records and uses BitRep verification independently off-chain.
+A protocol and reference implementation for registering scientific claims, linking evidence commitments and preserving revision/lifecycle history. The accepted bounded slice makes the local blockchain contract authoritative for those records and uses Cognous Evidence Attestation verification independently off-chain.
 
 ## Problem
 
@@ -17,7 +17,7 @@ A claim registry should distinguish who registered a record, what exact evidence
 
 ## Where It Fits
 
-A researcher registers a claim commitment on the local chain and attaches an evidence commitment. An independent reader reconstructs the record, retrieves the expected evidence bytes and checks the signed statement with BitRep. Wallet attribution, chain inclusion, issuer-signature assurance and the scientific interpretation remain separately labeled. Withdrawal or supersession preserves history instead of silently replacing it.
+A researcher registers a claim commitment on the local chain and attaches an evidence commitment. An independent reader reconstructs the record, retrieves the expected evidence bytes and checks the signed statement with Cognous Evidence Attestation. Wallet attribution, chain inclusion, issuer-signature assurance and the scientific interpretation remain separately labeled. Withdrawal or supersession preserves history instead of silently replacing it.
 
 A valid signature, chain inclusion, message receipt, reasoning instruction or evidence-package digest does not authorize execution. Institutional authority must be supplied and evaluated through the appropriate trusted boundary.
 
@@ -25,7 +25,7 @@ A valid signature, chain inclusion, message receipt, reasoning instruction or ev
 
 The [accepted hub lock](https://github.com/cogno-us/cognous-open-control-stack/blob/5737267d94d2b445735c95e8480a31de73a2abe8/component-lock.json) selects this component at `d5e45d275cb301d9684b543e93b05997991d1cf2`. Read the component's [README](../README.md) for version-specific acceptance and the [hub support ledger](https://github.com/cogno-us/cognous-open-control-stack/blob/main/docs/release-status.md) for the executed scope. Component acceptance is not automatic adoption of newer revisions or production qualification.
 
-No public-chain deployment, audited production contract, remote consensus finality, authenticated RPC proof or on-chain BitRep verification bridge is established. The legacy FastAPI/store surfaces are non-authoritative demonstrations. Legacy reputation-weighting and epistemic-scoring goals are not implemented blockchain guarantees.
+No public-chain deployment, audited production contract, remote consensus finality, authenticated RPC proof or on-chain Cognous Evidence Attestation verification bridge is established. The legacy FastAPI/store surfaces are non-authoritative demonstrations. Legacy reputation-weighting and epistemic-scoring goals are not implemented blockchain guarantees.
 
 ## Practical Next Step
 
