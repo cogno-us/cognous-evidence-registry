@@ -9,32 +9,10 @@ never accepts a `verified` boolean or verification-result JSON as proof.
 
 ## Reproduce
 
-From repository root, using Python 3.12+ and Node 24 (Node 22 should also be suitable,
-but was not tested in this run):
+Run **Actions → Chain and BitRep cross-component qualification** in GitHub. The workflow uses the canonical testing repository, the exact owning source commit, pinned BitRep `5b5077dafde232a7801cb425c4efddcffb468723`, the existing npm lock, Python 3.12 and Node 24. It runs only synthetic signing and disposable loopback EVM targets. No funds or public RPC are used.
 
-```bash
-python -m pip install -r requirements-dev.txt
-# Outside this repository; read-only dependency checkout, never production keys.
-git clone https://github.com/cogno-us/cognous-evidence-attestation.git ../bitrep
-git -C ../bitrep checkout --detach 5b5077dafde232a7801cb425c4efddcffb468723
-export BITREP_ROOT="$(cd ../bitrep && pwd)"
-cd chain
-npm ci
-npm run test:bitrep
-npm test
-cd ..
-python -m pytest -o addopts='' -q
-```
+The test drivers moved to [cognous-stack-qualification](https://github.com/cogno-us/cognous-stack-qualification/tree/43fb81dc3ec0da17402bef274dcec1831cc5e160/suites/cognous-evidence-registry). See [the source map](../CROSS_COMPONENT_TESTS.md). The old npm test entrypoints now fail with this relocation notice; they do not silently claim success. The adapter, contract and clients remain here. Historical commands and measurements in VALIDATION.md retain their recorded scope.
 
-`BITREP_ROOT` must identify a clean checkout at the pinned commit. Use a trusted
-checkout, interpreter and dependencies. The test signs only with an explicitly
-public synthetic key and starts disposable loopback Ganache servers on random
-ports. No funds or public RPC are used. It compiles the contract from source, writes
-through one chain client, independently reconstructs through another, then stops
-the servers. No deployment automation for a public chain is supplied.
-
-`npm test` includes the independent BitRep binding check against actual registered
-claim/evidence commitments and prints local gas/receipt latency measurements.
 The standalone adapter CLI accepts files and a **locally trusted** snapshot digest:
 
 ```bash
@@ -56,5 +34,5 @@ receipt. The fixture driver is test-only and is not the production CLI.
 - `client.mjs`: exact-byte commitments and deployment-scoped identifiers.
 - `reconstruct.mjs`: separate read-only log reconstruction and provisional-depth handling.
 - `python/bitrep_adapter.py`: binding checks using upstream verification, no copied crypto.
-- `test/protocol.test.mjs`, `python/test_bitrep.py`: executable synthetic scenarios.
+- Synthetic test drivers: maintained in the qualification repository linked above.
 - `VALIDATION.md`: actual results, environment, measurements and untested cases.
