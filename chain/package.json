@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "description": "Local-only decentralized Index reference protocol",
   "scripts": {
-    "test": "node --test test/*.test.mjs",
-    "test:bitrep": "python python/test_bitrep.py"
+    "test": "node -e \"console.error('Cross-component tests moved. Run chain-qualification in GitHub Actions; see ../CROSS_COMPONENT_TESTS.md'); process.exit(1)\"",
+    "test:bitrep": "node -e \"console.error('Cross-component tests moved. Run chain-qualification in GitHub Actions; see ../CROSS_COMPONENT_TESTS.md'); process.exit(1)\""
   },
   "keywords": [],
   "author": "",

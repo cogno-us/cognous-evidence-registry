@@ -1,0 +1,22 @@
+# Cross-component suite delegated to its canonical testing repository.
+name: Chain and BitRep cross-component qualification
+'on':
+  push:
+    branches:
+    - main
+    paths:
+    - chain/**
+    - .github/workflows/chain-qualification.yml
+  pull_request:
+    paths:
+    - chain/**
+    - .github/workflows/chain-qualification.yml
+  workflow_dispatch: null
+permissions:
+  contents: read
+jobs:
+  cross-component:
+    uses: cogno-us/cognous-stack-qualification/.github/workflows/cognous-evidence-registry--chain-qualification.yml@39f038435afdd71ba162860faa5718d90d7bde64
+    with:
+      source_revision: ${{ github.event.pull_request.head.sha || github.sha }}
+      qualification_revision: 39f038435afdd71ba162860faa5718d90d7bde64

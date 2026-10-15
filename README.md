@@ -123,3 +123,7 @@ execution authority.
 ## Repository locations
 
 See the [repository rename map and compatibility notes](https://github.com/cogno-us/cognous-open-control-stack/blob/main/docs/repository-renames.md) for current component URLs. Existing package names, schema identifiers and retained producer identities are unchanged.
+
+## Cross component qualification
+
+The BitRep and local EVM test drivers moved to the [qualification repository](https://github.com/cogno-us/cognous-stack-qualification/tree/39f038435afdd71ba162860faa5718d90d7bde64/suites/cognous-evidence-registry). Use the source-side Chain and BitRep workflow or [the migration map](CROSS_COMPONENT_TESTS.md). The registry application tests and chain adapter implementation remain here.
