@@ -23,7 +23,7 @@
 
 A protocol and reference implementation for registering scientific claims, linking evidence commitments and preserving revision/lifecycle history. The accepted bounded slice makes the local blockchain contract authoritative for those records and uses Cognous Evidence Attestation verification independently off-chain.
 
-**Implementation status:** this README describes merged public reference work. Component acceptance, selection in the hub and execution of a qualification are separate facts. The selected revision for this component is `d5e45d275cb301d9684b543e93b05997991d1cf2`; the [hub lock](https://github.com/cogno-us/cognous-open-control-stack/blob/5737267d94d2b445735c95e8480a31de73a2abe8/component-lock.json) is the source of that integration choice.
+**Implementation status:** public reference work. The [current component lock](https://github.com/cogno-us/cognous-open-control-stack/blob/main/component-lock.json) defines the selected integration; a component merge does not automatically change that selection or approve deployment.
 
 ## Purpose and intended users
 
@@ -51,11 +51,11 @@ A valid signature, chain inclusion, message receipt, reasoning instruction or ev
 
 The accepted local-chain reproduction requires Node/npm, Python and a clean Cognous Evidence Attestation checkout at the documented exact SHA. Follow the complete [chain reproduction guide](chain/README.md), which installs dependencies, binds Cognous Evidence Attestation and runs disposable local-chain tests. It uses synthetic keys and local servers, not funds or a public RPC. The legacy API setup in [DEVELOPER_SETUP](docs/DEVELOPER_SETUP.md) serves a different, non-authoritative demo surface.
 
-## Evidence and supported scope
+## Scope and compatibility
 
-The hub selects local blockchain reference `d5e45d275cb301d9684b543e93b05997991d1cf2`. The [local validation record](chain/VALIDATION.md) distinguishes executed protocol/Cognous Evidence Attestation cases, legacy regressions and untested production behavior. The normative boundary for this slice is [chain/PROTOCOL.md](chain/PROTOCOL.md); legacy intended specifications do not silently add guarantees.
+Use the [current component lock](https://github.com/cogno-us/cognous-open-control-stack/blob/main/component-lock.json) for the selected revision. The [local validation record](chain/VALIDATION.md) distinguishes executed protocol/Cognous Evidence Attestation cases, legacy regressions and untested production behavior. The normative boundary for this slice is [chain/PROTOCOL.md](chain/PROTOCOL.md); legacy intended specifications do not silently add guarantees.
 
-The accepted [hub persistence-generation evidence](https://github.com/cogno-us/cognous-open-control-stack/blob/5737267d94d2b445735c95e8480a31de73a2abe8/examples/control-plane-store-adoption/qualification-summary.json) records 915 Python tests in each of two repetitions, 35 matrix entries satisfying their gates and 120 separate mocked OpenShell tests. Those are aggregate hub results, not a per-component test count or a claim of production readiness. Optional behavioral layers receive static checks only. The [support ledger](https://github.com/cogno-us/cognous-open-control-stack/blob/main/docs/release-status.md) separates implementation, execution and adoption.
+Test results, run commentary and historical qualification records are maintained in the [central test hub](https://github.com/cogno-us/cognous-stack-qualification/blob/main/results/readme-commentary/index.md). Read them against their recorded source revisions; source selection and deployment approval are separate decisions.
 
 ## Limitations and deployment decisions
 
@@ -127,3 +127,6 @@ See the [repository rename map and compatibility notes](https://github.com/cogno
 ## Cross component qualification
 
 The BitRep and local EVM test drivers moved to the [qualification repository](https://github.com/cogno-us/cognous-stack-qualification/tree/39f038435afdd71ba162860faa5718d90d7bde64/suites/cognous-evidence-registry). Use the source-side Chain and BitRep workflow or [the migration map](CROSS_COMPONENT_TESTS.md). The registry application tests and chain adapter implementation remain here.
+
+<!-- Retained anchors for existing documentation links. -->
+<a id="evidence-and-supported-scope"></a>
