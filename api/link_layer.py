@@ -13,6 +13,8 @@ Protocol Invariants:
 
 import hashlib
 import json
+import math
+from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from uuid import uuid4
@@ -47,8 +49,8 @@ class LinkStore:
         Raises:
             ValueError: If link violates protocol invariants
         """
-        # Create a copy to avoid mutating the input
-        link = link.copy()
+        # Create a deep copy so callers cannot mutate stored nested state
+        link = deepcopy(link)
         
         # Validate protocol invariants
         self._validate_invariants(link, validate_references)
@@ -63,9 +65,14 @@ class LinkStore:
             link["created_at"] = now
         link["timestamp"] = link.get("timestamp", now)
         
-        # Compute immutable hash if not provided
-        if "immutable_hash" not in link:
-            link["immutable_hash"] = self._compute_immutable_hash(link)
+        # Compute immutable hash; a supplied hash must match the computed value
+        computed_hash = self._compute_immutable_hash(link)
+        if "immutable_hash" in link and link["immutable_hash"] != computed_hash:
+            raise ValueError(
+                "Protocol invariant violation: supplied link immutable_hash does not "
+                "match the computed hash"
+            )
+        link["immutable_hash"] = computed_hash
         
         # Check for existing link - immutability enforcement
         link_id = link["id"]
@@ -114,7 +121,7 @@ class LinkStore:
         Returns:
             Link dictionary if found, None otherwise
         """
-        return self._links.get(link_id)
+        return deepcopy(self._links.get(link_id))
 
     def list_by_source(self, source_id: str) -> List[Dict]:
         """
@@ -127,7 +134,7 @@ class LinkStore:
             List of link dictionaries
         """
         link_ids = self._links_by_source.get(source_id, [])
-        return [self._links[lid] for lid in link_ids if lid in self._links]
+        return [deepcopy(self._links[lid]) for lid in link_ids if lid in self._links]
 
     def list_by_target(self, target_id: str) -> List[Dict]:
         """
@@ -140,7 +147,7 @@ class LinkStore:
             List of link dictionaries
         """
         link_ids = self._links_by_target.get(target_id, [])
-        return [self._links[lid] for lid in link_ids if lid in self._links]
+        return [deepcopy(self._links[lid]) for lid in link_ids if lid in self._links]
 
     def list_by_relation(self, relation_type: str) -> List[Dict]:
         """
@@ -153,7 +160,7 @@ class LinkStore:
             List of link dictionaries
         """
         link_ids = self._links_by_relation.get(relation_type, [])
-        return [self._links[lid] for lid in link_ids if lid in self._links]
+        return [deepcopy(self._links[lid]) for lid in link_ids if lid in self._links]
 
     def list_by_attestor(self, attestor_id: str) -> List[Dict]:
         """
@@ -166,7 +173,7 @@ class LinkStore:
             List of link dictionaries
         """
         link_ids = self._links_by_attestor.get(attestor_id, [])
-        return [self._links[lid] for lid in link_ids if lid in self._links]
+        return [deepcopy(self._links[lid]) for lid in link_ids if lid in self._links]
 
     def get_supporting_links(self, claim_id: str) -> List[Dict]:
         """
@@ -244,7 +251,13 @@ class LinkStore:
         
         # Weight MUST be in valid range
         weight = link["weight"]
-        if not isinstance(weight, (int, float)) or weight < 0.0 or weight > 1.0:
+        if (
+            isinstance(weight, bool)
+            or not isinstance(weight, (int, float))
+            or not math.isfinite(weight)
+            or weight < 0.0
+            or weight > 1.0
+        ):
             raise ValueError(
                 "Protocol invariant violation: Link weight MUST be a number between 0.0 and 1.0"
             )
@@ -273,8 +286,9 @@ class LinkStore:
         Returns:
             Hex string of SHA-256 hash
         """
-        # Create a stable representation for hashing
-        # Include all immutable fields
+        # Create a stable representation for hashing.
+        # Covered fields are listed below; target_type and metadata are NOT
+        # covered by this hash (see chain/PROTOCOL.md legacy-store limits).
         stable_fields = {
             "id": link.get("id"),
             "source_id": link["source_id"],
