@@ -71,7 +71,7 @@ is_valid = signature_verifier.verify_signature(public_key, signature, data.encod
 **Implementation**:
 - Pydantic models for all API inputs (type checking; most text and list fields have no length or count bounds, and request size is not limited)
 - Type checking and validation at the API boundary
-- Automatic sanitization of user inputs
+- No input sanitization: string values are stored and returned as submitted (no HTML/script escaping or content filtering)
 
 **Protected Against**:
 - SQL injection (when database is added)
