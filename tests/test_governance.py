@@ -4,6 +4,8 @@ Unit tests for the Governance service.
 
 from datetime import datetime, timedelta
 
+import pytest
+
 from app.governance.models import (
     ProposalCreate,
     ProposalFinalize,
@@ -244,3 +246,12 @@ def test_get_votes_for_proposal(governance_service, sample_proposal_data):
 
     votes = governance_service.get_votes_for_proposal(proposal.id)
     assert len(votes) == 3
+
+
+@pytest.mark.parametrize("bad", [float("inf"), float("nan")])
+def test_vote_rejects_non_finite_reputation(bad):
+    """Infinite or NaN reputation must not be accepted for a vote."""
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        VoteCreate(proposal_id="p", voter="v", choice=VoteChoice.YES, reputation=bad)

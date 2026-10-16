@@ -2,6 +2,11 @@
 > claim PUT/DELETE now return 409 to preserve accepted history. Use the local
 > [blockchain protocol](../chain/README.md) for explicit revisions/lifecycle events.
 > Legacy identity strings and scores do not establish BitRep verification.
+>
+> **Unauthenticated, loopback-only.** This legacy API has no authentication,
+> authorization or rate limiting, and every identity field is caller-chosen.
+> Run it only on `127.0.0.1`; do not expose it on a network-reachable listener.
+> See [SECURITY.md](SECURITY.md).
 
 # API Documentation
 
@@ -24,7 +29,7 @@ The Index provides a RESTful API for managing claims, evidence, links, and gover
 
 **Current Status**: Placeholder authentication
 
-In the current version, authentication is placeholder-based. Production systems will integrate with BitRep for cryptographic identity verification.
+No authentication is performed. The header below is not read or verified by any route; identity is whatever the request body's `created_by` / `submitted_by` / `attested_by` / `voter` field says. BitRep cryptographic identity verification is not integrated into this legacy API.
 
 Required headers (placeholder):
 ```
@@ -314,8 +319,14 @@ Computes and retrieves the epistemic status for a claim.
 - `refuted`: Strong contradicting evidence (weight > 3.0)
 - `deprecated`: No longer relevant
 
-**Weight Calculation**:
-Weight = Evidence Quality Score × Link Strength × Reputation (from BitRep)
+**Weight Calculation** (as implemented):
+Weight = Evidence Quality Score × Link Strength, summed over every link.
+
+**Limits of this status**: it is a demo computation, not a truth or verification result.
+- No BitRep reputation is applied.
+- Every link counts separately: duplicate links between the same claim and evidence are each added, so repeated submissions inflate `supporting_weight` or `contradicting_weight`.
+- `quality_score` is derived from self-reported submitter metadata (methodology, sample size, uncertainty, replication history), none of which is verified.
+- Link strength and `attested_by` are caller-supplied and unauthenticated.
 
 ## Governance API
 

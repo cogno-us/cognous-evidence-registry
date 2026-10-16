@@ -67,7 +67,7 @@ class EvidenceService:
             created_at=datetime.utcnow(),
         )
 
-        self._evidence[evidence_id] = evidence
+        self._evidence[evidence_id] = evidence.model_copy(deep=True)
         return evidence
 
     def get_evidence(self, evidence_id: str) -> Optional[Evidence]:
@@ -80,7 +80,8 @@ class EvidenceService:
         Returns:
             The evidence if found, None otherwise
         """
-        return self._evidence.get(evidence_id)
+        evidence = self._evidence.get(evidence_id)
+        return evidence.model_copy(deep=True) if evidence else None
 
     def list_evidence(self, limit: int = 100, offset: int = 0) -> List[Evidence]:
         """
@@ -93,7 +94,7 @@ class EvidenceService:
         Returns:
             List of evidence items
         """
-        evidence_list = list(self._evidence.values())
+        evidence_list = [e.model_copy(deep=True) for e in self._evidence.values()]
         return evidence_list[offset : offset + limit]
 
     def create_link(self, link_data: LinkCreate) -> Link:
@@ -119,7 +120,7 @@ class EvidenceService:
             timestamp=datetime.utcnow(),
         )
 
-        self._links[link_id] = link
+        self._links[link_id] = link.model_copy(deep=True)
         return link
 
     def get_links_for_claim(self, claim_id: str) -> List[Link]:
@@ -133,7 +134,7 @@ class EvidenceService:
             List of links for the claim
         """
         return [
-            link
+            link.model_copy(deep=True)
             for link in self._links.values()
             if link.claim_id == claim_id or link.claim_id_2 == claim_id
         ]
@@ -148,7 +149,11 @@ class EvidenceService:
         Returns:
             List of links for the evidence
         """
-        return [link for link in self._links.values() if link.evidence_id == evidence_id]
+        return [
+            link.model_copy(deep=True)
+            for link in self._links.values()
+            if link.evidence_id == evidence_id
+        ]
 
     def compute_epistemic_status(self, claim_id: str) -> EpistemicStatus:
         """

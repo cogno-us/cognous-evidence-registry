@@ -265,6 +265,82 @@ class TestEvidenceInvariants:
         assert "checksum" in evidence
         assert len(evidence["checksum"]) == 64  # SHA-256 hex string
 
+    def test_reject_supplied_checksum_mismatch(self):
+        """A caller-supplied checksum that differs from the computed one is rejected."""
+        with pytest.raises(ValueError, match="checksum"):
+            create_evidence(
+                evidence_type="experiment",
+                source="doi:10.1234/test",
+                timestamp=datetime.utcnow().isoformat(),
+                provenance_chain=[{
+                    "actor": "test_user",
+                    "action": "created",
+                    "timestamp": datetime.utcnow().isoformat()
+                }],
+                submitted_by="test_user",
+                checksum="0" * 64,
+            )
+
+    def test_supplied_matching_checksum_accepted(self):
+        """A caller-supplied checksum equal to the computed value is accepted."""
+        store = get_evidence_store()
+        ts = datetime.utcnow().isoformat()
+        record = {
+            "id": "evidence_fixed_checksum",
+            "type": "experiment",
+            "source": "doi:10.1234/test",
+            "timestamp": ts,
+            "provenance_chain": [{"actor": "a", "action": "created", "timestamp": ts}],
+            "submitted_by": "test_user",
+        }
+        record["checksum"] = store._compute_checksum(record)
+        assert store.store(record) == "evidence_fixed_checksum"
+
+    def test_reject_supplied_link_hash_mismatch(self):
+        """A caller-supplied link immutable_hash that differs from the computed one is rejected."""
+        store = get_link_store()
+        with pytest.raises(ValueError, match="immutable_hash"):
+            store.store({
+                "source_id": "claim_test123",
+                "target_id": "evidence_test456",
+                "relation_type": "supports",
+                "weight": 1.0,
+                "attestor_id": "test_user",
+                "immutable_hash": "0" * 64,
+            })
+
+    def test_no_mutable_evidence_or_link_aliases(self):
+        """Evidence/link stores copy nested data in and out."""
+        ts = datetime.utcnow().isoformat()
+        chain = [{"actor": "a", "action": "created", "timestamp": ts}]
+        store = get_evidence_store()
+        record = {"type": "experiment", "source": "s", "timestamp": ts,
+                  "provenance_chain": chain, "submitted_by": "u",
+                  "metadata": {"tags": ["orig"]}}
+        evidence_id = store.store(record)
+        expected = store.retrieve(evidence_id)
+        record["provenance_chain"][0]["actor"] = "tampered"
+        record["metadata"]["tags"].append("tampered")
+        for returned in [store.retrieve(evidence_id), store.list_by_type("experiment")[0],
+                         store.list_by_submitter("u")[0]]:
+            returned["provenance_chain"][0]["actor"] = "tampered"
+            returned["metadata"]["tags"].append("tampered")
+        assert store.retrieve(evidence_id) == expected
+
+        links = get_link_store()
+        link = {"source_id": "claim_a", "target_id": "evidence_b", "relation_type": "supports",
+                "weight": 0.5, "attestor_id": "u", "metadata": {"notes": ["orig"]}}
+        link_id = links.store(link)
+        expected_link = links.retrieve(link_id)
+        link["metadata"]["notes"].append("tampered")
+        for returned in [links.retrieve(link_id), links.list_by_source("claim_a")[0],
+                         links.list_by_target("evidence_b")[0],
+                         links.list_by_relation("supports")[0],
+                         links.list_by_attestor("u")[0],
+                         links.get_supporting_links("evidence_b")[0]]:
+            returned["metadata"]["notes"].append("tampered")
+        assert links.retrieve(link_id) == expected_link
+
 
 class TestLinkInvariants:
     """Test enforcement of link invariants."""
@@ -383,6 +459,18 @@ class TestLinkInvariants:
                 relation_type="supports",
                 attestor_id="test_user",
                 weight=-0.5
+            )
+
+    @pytest.mark.parametrize("bad_weight", [float("nan"), float("inf"), float("-inf"), True, False])
+    def test_reject_non_finite_or_bool_weight(self, bad_weight):
+        """NaN, infinities and booleans are not valid link weights."""
+        with pytest.raises(ValueError, match="weight"):
+            create_link(
+                source_id="claim_test123",
+                target_id="evidence_test456",
+                relation_type="supports",
+                attestor_id="test_user",
+                weight=bad_weight
             )
 
 

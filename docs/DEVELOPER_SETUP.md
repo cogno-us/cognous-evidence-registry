@@ -96,8 +96,13 @@ uvicorn app.main:app --reload
 
 **Custom host and port**:
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+
+> **Loopback only.** This legacy API is unauthenticated: it has no
+> authentication, authorization or rate limiting, and identity fields are
+> caller-chosen. Keep `--host` on `127.0.0.1`. Binding to `0.0.0.0` or any other
+> network-reachable interface is unsafe. See [SECURITY.md](SECURITY.md).
 
 **With logging**:
 ```bash
@@ -379,6 +384,12 @@ GOVERNANCE_QUADRATIC_SCALING=true
 
 ## Docker Setup (Optional)
 
+> **Unsafe to expose.** Inside a container the server must listen on
+> `0.0.0.0` for port publishing to work, which makes this unauthenticated legacy
+> API reachable from the container network. Publish the port to the host
+> loopback only (`-p 127.0.0.1:8000:8000`, as below) and never to a public or
+> shared interface.
+
 **Dockerfile** (create if needed):
 ```dockerfile
 FROM python:3.9-slim
@@ -390,13 +401,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# 0.0.0.0 is required inside the container; publish to host loopback only (see below).
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 **Run with Docker**:
 ```bash
 docker build -t the-index .
-docker run -p 8000:8000 the-index
+docker run -p 127.0.0.1:8000:8000 the-index
 ```
 
 ## Troubleshooting

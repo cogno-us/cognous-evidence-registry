@@ -19,6 +19,7 @@ mechanisms or confidential evidence are imported.
 | `app/claims/service.py`, `app/api/claims.py` | Process-local global dictionaries; unrestricted PUT changes text/status and DELETE erases claims. No separate accepted-state guard. Confirmed, now blocked for every created claim with HTTP 409. |
 | `api/claim_layer.py` | Separate in-memory implementation rejects same-ID writes but shallow copies and returned aliases allow mutation; status overwrote prior state. Now deep copies and local status history. Still no authenticated chain authority. |
 | `api/link_layer.py` | Nonempty attestor ID is accepted without BitRep signature verification; optional reference callback can be omitted. Existing legacy code, explicitly not a blockchain admission route. |
+| `api/claim_layer.py`, `api/evidence_layer.py`, `api/link_layer.py` (references) | Reference existence is not enforced on the default path: claim `evidence_refs`, evidence claim references and link `source_id`/`target_id` are checked only for ID prefix, so dangling and type-confused references are stored unless a caller supplies `validate_references`. Store-computed `checksum`/`immutable_hash` reject mismatched caller-supplied values, but the link hash does not cover `target_type` or `metadata`, and neither digest is a signature. |
 | `app/evidence/service.py`, `protocol/epistemic_engine.py` | Local scoring / optional reputation inputs, not BitRep v1 reputation. Not used by this profile. |
 | `app/governance/service.py` | Caller-provided voter identity/reputation and in-memory votes. Does not authorize contract upgrades or protocol truth. |
 | `app/core/security.py` | RSA utilities are not an integrated BitRep v1 gate; ZK placeholder is not proof. No assurance use permitted. |
@@ -132,6 +133,8 @@ and after scanning. A detected mid-scan reorganization causes retry. Rebuilding
 rather than retaining a mutable cache removes orphaned records after a reorg. This
 bounded implementation is inefficient for a large chain; pagination, checkpoints
 with rollback and archival-node operation remain deployment work.
+It loads the entire `getLogs` response into memory before any bound applies, so an
+untrusted or very large RPC response can exhaust reader memory.
 
 Clients must independently pin network, deployment and code identity. Reading an
 arbitrary address with this ABI does not certify it. An RPC server is not a consensus

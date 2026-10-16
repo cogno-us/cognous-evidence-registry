@@ -13,6 +13,7 @@ Protocol Invariants:
 
 import hashlib
 import json
+from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import uuid4
@@ -46,8 +47,8 @@ class EvidenceStore:
         Raises:
             ValueError: If evidence violates protocol invariants
         """
-        # Create a copy to avoid mutating the input
-        evidence = evidence.copy()
+        # Create a deep copy so callers cannot mutate stored nested state
+        evidence = deepcopy(evidence)
         
         # Validate protocol invariants
         self._validate_invariants(evidence)
@@ -62,9 +63,14 @@ class EvidenceStore:
             evidence["created_at"] = now
         evidence["updated_at"] = now
         
-        # Compute checksum if not provided
-        if "checksum" not in evidence:
-            evidence["checksum"] = self._compute_checksum(evidence)
+        # Compute checksum; a supplied checksum must match the computed value
+        computed_checksum = self._compute_checksum(evidence)
+        if "checksum" in evidence and evidence["checksum"] != computed_checksum:
+            raise ValueError(
+                "Protocol invariant violation: supplied evidence checksum does not "
+                "match the computed checksum"
+            )
+        evidence["checksum"] = computed_checksum
         
         # Check for existing evidence - immutability enforcement
         evidence_id = evidence["id"]
@@ -101,7 +107,7 @@ class EvidenceStore:
         Returns:
             Evidence dictionary if found, None otherwise
         """
-        return self._evidence.get(evidence_id)
+        return deepcopy(self._evidence.get(evidence_id))
 
     def register_claim_reference(self, evidence_id: str, claim_id: str) -> bool:
         """
@@ -160,7 +166,7 @@ class EvidenceStore:
             List of evidence dictionaries
         """
         evidence_ids = self._evidence_by_type.get(evidence_type, [])
-        return [self._evidence[eid] for eid in evidence_ids if eid in self._evidence]
+        return [deepcopy(self._evidence[eid]) for eid in evidence_ids if eid in self._evidence]
 
     def list_by_submitter(self, submitter: str) -> List[Dict]:
         """
@@ -173,7 +179,7 @@ class EvidenceStore:
             List of evidence dictionaries
         """
         evidence_ids = self._evidence_by_submitter.get(submitter, [])
-        return [self._evidence[eid] for eid in evidence_ids if eid in self._evidence]
+        return [deepcopy(self._evidence[eid]) for eid in evidence_ids if eid in self._evidence]
 
     def _validate_invariants(self, evidence: Dict) -> None:
         """

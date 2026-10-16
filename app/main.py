@@ -66,7 +66,11 @@ def health_check():
     return {"status": "healthy", "version": settings.app_version}
 
 
+# This legacy demo API is unauthenticated; the direct-run path binds to
+# loopback only. Do not expose it on a network-reachable interface.
+DEFAULT_HOST = "127.0.0.1"
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=DEFAULT_HOST, port=8000)

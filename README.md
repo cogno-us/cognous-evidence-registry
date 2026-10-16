@@ -59,7 +59,7 @@ Test results, run commentary and historical qualification records are maintained
 
 ## Limitations and deployment decisions
 
-No public-chain deployment, audited production contract, remote consensus finality, authenticated RPC proof or on-chain Cognous Evidence Attestation verification bridge is established. The legacy FastAPI/store surfaces are non-authoritative demonstrations. Legacy reputation-weighting and epistemic-scoring goals are not implemented blockchain guarantees.
+No public-chain deployment, audited production contract, remote consensus finality, authenticated RPC proof or on-chain Cognous Evidence Attestation verification bridge is established. The legacy FastAPI/store surfaces are non-authoritative demonstrations; the legacy API is unauthenticated and must be run on loopback (`127.0.0.1`) only (see [docs/SECURITY.md](docs/SECURITY.md)). Legacy reputation-weighting and epistemic-scoring goals are not implemented blockchain guarantees.
 
 Review original artifacts and their exact source revisions before extending a claim to a new environment. New dependencies, authority sources, destinations or enforcement mechanisms need their own compatibility and qualification. A passing reference case is not a certification of an enterprise deployment.
 
