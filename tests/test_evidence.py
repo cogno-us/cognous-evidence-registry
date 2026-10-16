@@ -215,3 +215,35 @@ def test_quality_score_calculation(evidence_service):
 
     # Evidence with rich metadata should have higher quality score
     assert evidence2.quality_score > evidence1.quality_score
+
+
+def test_no_mutable_evidence_or_link_aliases(evidence_service, sample_evidence_data):
+    """EvidenceService copies records in and out, mirroring ClaimsService."""
+    original = evidence_service.submit_evidence(EvidenceCreate(**sample_evidence_data))
+    expected = original.model_copy(deep=True)
+    for evidence in [
+        original,
+        evidence_service.get_evidence(original.id),
+        evidence_service.list_evidence()[0],
+    ]:
+        evidence.quality_score = 0.0
+        evidence.metadata.methodology = "tampered"
+    assert evidence_service.get_evidence(original.id) == expected
+
+    link = evidence_service.create_link(
+        LinkCreate(
+            claim_id="claim_x",
+            evidence_id=original.id,
+            relation_type=RelationType.SUPPORTS,
+            strength=0.9,
+            attested_by="test_user",
+        )
+    )
+    expected_link = link.model_copy(deep=True)
+    for returned in [
+        link,
+        evidence_service.get_links_for_claim("claim_x")[0],
+        evidence_service.get_links_for_evidence(original.id)[0],
+    ]:
+        returned.strength = 0.0
+    assert evidence_service.get_links_for_claim("claim_x")[0] == expected_link
