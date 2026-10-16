@@ -86,7 +86,9 @@ class VoteCreate(BaseModel):
     proposal_id: str = Field(..., description="ID of the proposal")
     voter: str = Field(..., description="BitRep identity of voter")
     choice: VoteChoice = Field(..., description="Vote choice")
-    reputation: float = Field(..., ge=0.0, description="Voter's reputation score")
+    reputation: float = Field(
+        ..., ge=0.0, allow_inf_nan=False, description="Voter's reputation score"
+    )
 
 
 class Vote(VoteCreate):
