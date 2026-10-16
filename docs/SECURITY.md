@@ -1,5 +1,16 @@
 # Security Policy
 
+> **Legacy demo API: unauthenticated, loopback-only.** The FastAPI application
+> under `app/` and the in-memory stores under `api/` are non-authoritative
+> legacy demonstrations. They have no authentication, no authorization and no
+> rate limiting; every identity field (`created_by`, `submitted_by`,
+> `attested_by`, `voter`, `attestor_id`) is caller-chosen and unverified. Run
+> them only on a loopback interface (`127.0.0.1`) for local development. Do not
+> bind them to `0.0.0.0` or expose them on any network-reachable listener. The
+> authoritative bounded slice is the local chain profile in
+> [chain/PROTOCOL.md](../chain/PROTOCOL.md). Nothing in this document is a
+> security clearance, certification or production-readiness claim.
+
 ## Overview
 
 The Index implements multiple security layers to ensure the integrity, authenticity, and privacy of scientific claims and evidence. This document outlines our security principles, implemented measures, and vulnerability reporting process.
@@ -7,7 +18,7 @@ The Index implements multiple security layers to ensure the integrity, authentic
 ## Security Principles
 
 ### 1. Verifiability
-Every claim, piece of evidence, and link must be backed by cryptographic attestations.
+Design goal: claims, evidence and links should be backed by cryptographic attestations. The legacy API and stores do **not** implement this: they accept records without any signature. Signature verification exists only in the chain profile and its Cognous Evidence Attestation (BitRep) adapter; see [chain/PROTOCOL.md](../chain/PROTOCOL.md).
 
 ### 2. Immutability
 Core data structures are designed to be immutable once created, with only computed fields (like status) being updateable.
@@ -25,7 +36,7 @@ Support for selective disclosure and zero-knowledge proofs to protect sensitive 
 
 ### 1. Cryptographic Signature Verification
 
-**Status**: ✅ Implemented (Placeholder for BitRep integration)
+**Status**: 🟡 Helper only — not wired into the legacy API. `SignatureVerifier` exists as a library helper, but no legacy route or store calls it; legacy records are accepted unsigned.
 
 **Implementation**:
 - RSA-based digital signatures for attestations
@@ -55,10 +66,10 @@ is_valid = signature_verifier.verify_signature(public_key, signature, data.encod
 
 ### 2. Input Validation
 
-**Status**: ✅ Implemented
+**Status**: 🟡 Partial — type validation only
 
 **Implementation**:
-- Pydantic models for all API inputs
+- Pydantic models for all API inputs (type checking; most text and list fields have no length or count bounds, and request size is not limited)
 - Type checking and validation at the API boundary
 - Automatic sanitization of user inputs
 
@@ -69,7 +80,7 @@ is_valid = signature_verifier.verify_signature(public_key, signature, data.encod
 - Type confusion
 - Malformed data
 
-**Example**:
+**Example** (illustrative target shape; the current `app/core/models.py` does not apply these bounds):
 ```python
 class ClaimCreate(BaseModel):
     canonical_text: str = Field(..., min_length=1, max_length=10000)
@@ -149,17 +160,17 @@ class ClaimCreate(BaseModel):
 Weighted Vote = sqrt(Reputation Score)
 ```
 
-This reduces the impact of high-reputation voters and makes Sybil attacks economically unfeasible.
+This reduces the impact of high-reputation voters. It does **not** provide Sybil resistance in the legacy demo: the `voter` identity and `reputation` value are both caller-supplied and unverified, so one client can vote under many invented identities. Reputation must be finite and non-negative (infinite/NaN values are rejected), but caller-chosen voter identity remains a residual of the legacy demo.
 
 ### 7. Data Integrity
 
-**Status**: ✅ Implemented
+**Status**: 🟡 Partial (legacy stores) — not an authoritative audit trail
 
 **Measures**:
-- Content-addressed storage (IDs derived from content)
-- Timestamping of all operations
-- Immutable audit trail
-- Provenance tracking for all attestations
+- Timestamping of create operations
+- Duplicate-ID rejection and copy-in/copy-out isolation in the in-memory stores
+- Store-computed SHA-256 `checksum` (evidence) and `immutable_hash` (link); a caller-supplied value that differs from the computed one is rejected. The link hash does **not** cover `target_type` or `metadata`.
+- IDs are random, not content-derived; storage is process-local memory, not an immutable audit trail; attestations are not signed or verified
 
 **Data Flow**:
 ```
@@ -220,7 +231,17 @@ Claim → Evidence → Link → Attestation → Signature → Verification
 - Implement rate limiting before public release
 - Progressive throttling based on behavior
 
-### 4. Centralized Deployment
+### 4. Hard-Coded Default Secret Key
+**Risk**: `app/core/config.py` ships a default `secret_key` (`dev-secret-key-change-in-production`). The legacy API does not currently use it for any route (no token issuance or verification is wired in), but any future use would be forgeable unless the value is overridden.
+
+**Mitigation**: Residual of the legacy demo; behavior is unchanged. Do not rely on it; set a real secret via environment if token code is ever wired in.
+
+### 5. Unbounded Input and Untrusted RPC
+**Risk**: Legacy routes and stores retain every accepted object in memory without size or count limits. The chain reconstruction indexer loads the full `getLogs` response from its JSON-RPC provider before any bound applies, so an untrusted or very large provider response can exhaust memory.
+
+**Mitigation**: Run the legacy API on loopback only and use a trusted local RPC for reconstruction.
+
+### 6. Centralized Deployment
 **Risk**: Single point of failure
 
 **Mitigation** (Planned):
@@ -237,7 +258,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 ### Reporting Process
 
 1. **Do NOT** open a public GitHub issue
-2. Email security reports to: [security@example.com] (TBD)
+2. Email security reports to: andredelima@cogno.us (the shared Cognous stack reporting route; see the [stack security policy](https://github.com/cogno-us/cognous-open-control-stack/blob/main/SECURITY.md))
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce
@@ -246,10 +267,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### Response Timeline
 
-- **24 hours**: Acknowledgment of report
-- **72 hours**: Initial assessment
-- **7 days**: Status update
-- **30 days**: Fix or mitigation plan
+No response-time guarantee is made; see the [stack security policy](https://github.com/cogno-us/cognous-open-control-stack/blob/main/SECURITY.md) for intake status.
 
 ### Hall of Fame
 
@@ -337,8 +355,7 @@ bandit -r app/
 ### Contact
 
 For security concerns:
-- Email: [security@example.com] (TBD)
-- GitHub: [Create security advisory](https://github.com/clarity-index/the-index/security/advisories)
+- Email: andredelima@cogno.us (see the [stack security policy](https://github.com/cogno-us/cognous-open-control-stack/blob/main/SECURITY.md))
 
 ## Acknowledgments
 
