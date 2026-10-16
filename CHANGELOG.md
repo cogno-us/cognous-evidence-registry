@@ -13,3 +13,9 @@
 - Correct implementation/assurance labels and document authority, privacy,
   availability, trust, chain-selection, migration and Governor decisions.
 - Retain original MIT license and history. No adjacent repository modifications.
+- F5b security repairs (legacy demo surfaces only): direct-run API binds to
+  loopback; vote reputation must be finite; evidence/link stores and
+  EvidenceService copy records in and out; supplied evidence checksums and link
+  hashes must match the computed value; link weights must be finite non-bool
+  numbers. Docs now state the legacy API is unauthenticated and loopback-only and
+  correct SECURITY.md overclaims and reporting route.
