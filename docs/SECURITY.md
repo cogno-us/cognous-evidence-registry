@@ -73,12 +73,15 @@ is_valid = signature_verifier.verify_signature(public_key, signature, data.encod
 - Type checking and validation at the API boundary
 - No input sanitization: string values are stored and returned as submitted (no HTML/script escaping or content filtering)
 
-**Protected Against**:
-- SQL injection (when database is added)
-- XSS attacks
-- Buffer overflow
-- Type confusion
-- Malformed data
+**What this provides**:
+- Malformed request bodies (invalid JSON, missing required fields, wrong field types, invalid enum values) are rejected by Pydantic with HTTP 422
+- Numeric bounds where declared (for example `ge`/`le` on scores and link strength, finite non-negative vote reputation)
+
+**What this does not provide**:
+- No SQL injection surface exists because the legacy API has no database or SQL; this is an absence of SQL, not a protection, and any future database code needs its own parameterized queries
+- No XSS protection: values are returned as submitted
+- No size or count limits on request bodies, strings or lists
+- Free-form fields such as `semantic_representation` (`Dict[str, Any]`) accept arbitrary JSON values without type checking
 
 **Example** (illustrative target shape; the current `app/core/models.py` does not apply these bounds):
 ```python
