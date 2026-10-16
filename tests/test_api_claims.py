@@ -113,3 +113,22 @@ def test_search_claims_endpoint(client, sample_claim_data):
     data = response.json()
     assert len(data) == 1
     assert "quantum" in data[0]["canonical_text"].lower()
+
+
+def test_direct_run_default_host_is_loopback():
+    """The unauthenticated legacy API's direct-run path binds to loopback only."""
+    import ast
+    import inspect
+
+    import app.main as main_module
+
+    assert main_module.DEFAULT_HOST == "127.0.0.1"
+    tree = ast.parse(inspect.getsource(main_module))
+    hosts = [
+        kw.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and getattr(node.func, "attr", None) == "run"
+        for kw in node.keywords
+        if kw.arg == "host"
+    ]
+    assert hosts and all(isinstance(h, ast.Name) and h.id == "DEFAULT_HOST" for h in hosts)
