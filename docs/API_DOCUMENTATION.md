@@ -29,7 +29,7 @@ The Index provides a RESTful API for managing claims, evidence, links, and gover
 
 **Current Status**: Placeholder authentication
 
-No authentication is performed. The header below is not read or verified by any route; identity is whatever the request body's `created_by` / `submitted_by` / `attested_by` / `voter` field says. BitRep cryptographic identity verification is not integrated into this legacy API.
+Only `POST /evidence/links` verifies identity (BitRep v1 attestation, see BITREP_LINK_ATTESTATION.md). All other routes perform no authentication. The header below is not read or verified by any route; identity is whatever the request body's `created_by` / `submitted_by` / `attested_by` / `voter` field says. BitRep cryptographic identity verification is not integrated into this legacy API.
 
 Required headers (placeholder):
 ```
@@ -240,11 +240,17 @@ Creates a link between a claim and evidence (or another claim).
   "evidence_id": "evidence_xyz789",
   "relation_type": "supports",
   "strength": 0.9,
-  "attested_by": "bitrep_id_789"
+  "attested_by": "issuer:alice",
+  "attestation": {"statement": {"...": "BitRep v1 statement"}, "signature": "<base64 Ed25519>"}
 }
 ```
 
-**Request Body** (Claim-Claim Link):
+`attestation` is **required** and must verify under the operator trust snapshot
+(`BITREP_TRUST_REGISTRY`); `attested_by` must equal the signed issuer. Unsigned or
+unverifiable links are rejected (401/422/409/503). Profile, error table and migration:
+[BITREP_LINK_ATTESTATION.md](BITREP_LINK_ATTESTATION.md).
+
+**Request Body** (Claim-Claim Link, same attestation requirement):
 ```json
 {
   "claim_id": "claim_abc123",
@@ -326,7 +332,8 @@ Weight = Evidence Quality Score × Link Strength, summed over every link.
 - No BitRep reputation is applied.
 - Every link counts separately: duplicate links between the same claim and evidence are each added, so repeated submissions inflate `supporting_weight` or `contradicting_weight`.
 - `quality_score` is derived from self-reported submitter metadata (methodology, sample size, uncertainty, replication history), none of which is verified.
-- Link strength and `attested_by` are caller-supplied and unauthenticated.
+- Link strength is caller-supplied (it is covered by the link attestation, so it cannot be altered after signing, but it is not independently validated). `attested_by` is verified only as a BitRep issuer signature under the operator trust snapshot.
+- `independence_score` counts distinct evidence `source_identifier` values (1 source = 0.2, 5+ = 1.0), not evidence records.
 
 ## Governance API
 

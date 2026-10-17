@@ -174,14 +174,27 @@ class LinkBase(BaseModel):
 class LinkCreate(LinkBase):
     """Model for creating a new link."""
 
-    attested_by: str = Field(..., description="BitRep identity creating the link")
+    attested_by: str = Field(
+        ..., description="BitRep issuer of the attestation; must equal attestation.statement.issuer"
+    )
+    attestation: Optional[Dict[str, Any]] = Field(
+        None,
+        description=(
+            "BitRep v1 attestation envelope {statement, signature} binding this link "
+            "(profile: docs/BITREP_LINK_ATTESTATION.md). Required by POST /evidence/links."
+        ),
+    )
 
 
 class Link(LinkBase):
     """Complete link model with metadata."""
 
     id: str = Field(..., description="Unique link identifier")
-    attested_by: str = Field(..., description="BitRep identity creating the link")
+    attested_by: str = Field(..., description="Verified BitRep issuer that attested the link")
+    attestation_id: Optional[str] = Field(None, description="Issuer-scoped attestation id")
+    attestation_statement_digest: Optional[str] = Field(
+        None, description="sha256 commitment to the verified signed statement"
+    )
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
     model_config = ConfigDict(

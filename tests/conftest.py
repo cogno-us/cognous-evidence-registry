@@ -83,3 +83,29 @@ def sample_proposal_data():
         "proposed_changes": {"new_relation": "partially_supports"},
         "proposer": "test_user_789",
     }
+
+
+@pytest.fixture
+def signer(tmp_path, monkeypatch):
+    """Throwaway issuer key + operator trust snapshot (BITREP_TRUST_REGISTRY) for link tests."""
+    from tests.attest_helpers import make_registry, new_key, sign_link, write_registry
+
+    priv = new_key()
+    path = tmp_path / "trust.json"
+    monkeypatch.setenv(
+        "BITREP_TRUST_REGISTRY", write_registry(path, make_registry(priv))
+    )
+
+    class Signer:
+        key = priv
+        registry_path = path
+
+        @staticmethod
+        def sign(link_fields, **kw):
+            return sign_link(priv, link_fields, **kw)
+
+        @staticmethod
+        def set_registry(registry):
+            write_registry(path, registry)
+
+    return Signer

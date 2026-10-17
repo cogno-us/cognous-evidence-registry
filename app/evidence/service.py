@@ -7,7 +7,7 @@ and linking evidence to claims.
 
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from app.core.models import (
     ClaimStatus,
@@ -41,6 +41,8 @@ class EvidenceService:
         # In-memory storage (replace with database in production)
         self._evidence: Dict[str, Evidence] = {}
         self._links: Dict[str, Link] = {}
+        # (issuer, attestation_id) -> (statement_digest, link_id): replay/idempotency index
+        self._attestations: Dict[Tuple[str, str], Tuple[str, str]] = {}
 
     def submit_evidence(self, evidence_data: EvidenceCreate) -> Evidence:
         """
@@ -97,12 +99,29 @@ class EvidenceService:
         evidence_list = [e.model_copy(deep=True) for e in self._evidence.values()]
         return evidence_list[offset : offset + limit]
 
-    def create_link(self, link_data: LinkCreate) -> Link:
+    def find_link_by_attestation(self, issuer: str, attestation_id: str) -> Optional[Tuple[str, Link]]:
+        """Return (statement_digest, link) previously stored for this issuer/attestation id."""
+        hit = self._attestations.get((issuer, attestation_id))
+        if not hit:
+            return None
+        return hit[0], self._links[hit[1]].model_copy(deep=True)
+
+    def create_link(
+        self,
+        link_data: LinkCreate,
+        attestation_id: Optional[str] = None,
+        attestation_statement_digest: Optional[str] = None,
+    ) -> Link:
         """
         Create a link between a claim and evidence or another claim.
 
+        This method does NOT verify identity. The HTTP route verifies the BitRep
+        attestation first (app.evidence.link_attestation) and passes its identifiers here.
+
         Args:
             link_data: Link data including claim_id, evidence_id/claim_id_2, and relation type
+            attestation_id: Verified attestation id, if any
+            attestation_statement_digest: Verified signed-statement digest, if any
 
         Returns:
             The created link
@@ -117,10 +136,17 @@ class EvidenceService:
             relation_type=link_data.relation_type,
             strength=link_data.strength,
             attested_by=link_data.attested_by,
+            attestation_id=attestation_id,
+            attestation_statement_digest=attestation_statement_digest,
             timestamp=datetime.utcnow(),
         )
 
         self._links[link_id] = link.model_copy(deep=True)
+        if attestation_id and attestation_statement_digest:
+            self._attestations[(link.attested_by, attestation_id)] = (
+                attestation_statement_digest,
+                link_id,
+            )
         return link
 
     def get_links_for_claim(self, claim_id: str) -> List[Link]:
@@ -170,6 +196,8 @@ class EvidenceService:
         # Calculate supporting and contradicting weights
         supporting_weight = 0.0
         contradicting_weight = 0.0
+        # Independence counts distinct source identity (source_identifier), never evidence ids:
+        # many records citing one source are one source (issue #24).
         evidence_sources = set()
 
         for link in links:
@@ -184,7 +212,7 @@ class EvidenceService:
                     elif link.relation_type == RelationType.CONTRADICTS:
                         contradicting_weight += weight
 
-                    evidence_sources.add(link.evidence_id)
+                    evidence_sources.add(self._source_key(evidence.source_identifier))
 
         # Calculate independence score based on diversity of sources
         independence_score = min(len(evidence_sources) / 5.0, 1.0)
@@ -213,6 +241,11 @@ class EvidenceService:
             robustness_score=robustness_score,
             last_computed_at=datetime.utcnow(),
         )
+
+    @staticmethod
+    def _source_key(source_identifier: str) -> str:
+        """Normalise a source identifier so trivially different spellings are one source."""
+        return " ".join(source_identifier.split()).casefold()
 
     def _calculate_quality_score(self, evidence_data: EvidenceCreate) -> float:
         """

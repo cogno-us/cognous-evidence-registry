@@ -3,8 +3,10 @@
 > **Legacy demo API: unauthenticated, loopback-only.** The FastAPI application
 > under `app/` and the in-memory stores under `api/` are non-authoritative
 > legacy demonstrations. They have no authentication, no authorization and no
-> rate limiting; every identity field (`created_by`, `submitted_by`,
-> `attested_by`, `voter`, `attestor_id`) is caller-chosen and unverified. Run
+> rate limiting; the identity fields (`created_by`, `submitted_by`, `voter`,
+> `attestor_id`) are caller-chosen and unverified. The one exception is link
+> `attested_by`, which must match the issuer of a BitRep v1 signature verified
+> against an operator trust snapshot (see BITREP_LINK_ATTESTATION.md). Run
 > them only on a loopback interface (`127.0.0.1`) for local development. Do not
 > bind them to `0.0.0.0` or expose them on any network-reachable listener. The
 > authoritative bounded slice is the local chain profile in
