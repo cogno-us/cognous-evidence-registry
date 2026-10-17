@@ -43,7 +43,7 @@ def test_list_evidence_endpoint(client, sample_evidence_data):
     assert len(data) == 3
 
 
-def test_create_link_endpoint(client, sample_claim_data, sample_evidence_data):
+def test_create_link_endpoint(client, signer, sample_claim_data, sample_evidence_data):
     """Test POST /api/v1/evidence/links endpoint."""
     # Create a claim
     claim_response = client.post("/api/v1/claims/", json=sample_claim_data)
@@ -59,9 +59,8 @@ def test_create_link_endpoint(client, sample_claim_data, sample_evidence_data):
         "evidence_id": evidence_id,
         "relation_type": "supports",
         "strength": 0.9,
-        "attested_by": "test_user_789",
     }
-    response = client.post("/api/v1/evidence/links", json=link_data)
+    response = client.post("/api/v1/evidence/links", json=signer.sign(link_data))
 
     assert response.status_code == 201
     data = response.json()
@@ -70,7 +69,7 @@ def test_create_link_endpoint(client, sample_claim_data, sample_evidence_data):
     assert data["relation_type"] == "supports"
 
 
-def test_get_links_for_claim_endpoint(client, sample_claim_data, sample_evidence_data):
+def test_get_links_for_claim_endpoint(client, signer, sample_claim_data, sample_evidence_data):
     """Test GET /api/v1/evidence/links/claim/{claim_id} endpoint."""
     # Create a claim
     claim_response = client.post("/api/v1/claims/", json=sample_claim_data)
@@ -85,9 +84,8 @@ def test_get_links_for_claim_endpoint(client, sample_claim_data, sample_evidence
         "evidence_id": evidence_id,
         "relation_type": "supports",
         "strength": 0.9,
-        "attested_by": "test_user_789",
     }
-    client.post("/api/v1/evidence/links", json=link_data)
+    client.post("/api/v1/evidence/links", json=signer.sign(link_data))
 
     # Get links for claim
     response = client.get(f"/api/v1/evidence/links/claim/{claim_id}")
@@ -98,7 +96,7 @@ def test_get_links_for_claim_endpoint(client, sample_claim_data, sample_evidence
     assert data[0]["claim_id"] == claim_id
 
 
-def test_get_epistemic_status_endpoint(client, sample_claim_data, sample_evidence_data):
+def test_get_epistemic_status_endpoint(client, signer, sample_claim_data, sample_evidence_data):
     """Test GET /api/v1/evidence/epistemic-status/{claim_id} endpoint."""
     # Create a claim
     claim_response = client.post("/api/v1/claims/", json=sample_claim_data)
@@ -116,9 +114,10 @@ def test_get_epistemic_status_endpoint(client, sample_claim_data, sample_evidenc
             "evidence_id": evidence_id,
             "relation_type": "supports",
             "strength": 0.9,
-            "attested_by": f"test_user_{i}",
         }
-        client.post("/api/v1/evidence/links", json=link_data)
+        client.post(
+            "/api/v1/evidence/links", json=signer.sign(link_data, attestation_id=f"att-{i}")
+        )
 
     # Get epistemic status
     response = client.get(f"/api/v1/evidence/epistemic-status/{claim_id}")

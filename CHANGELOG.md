@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased — V1 validation remediation (#23, #24)
+
+- **Behaviour change (breaking for unsigned clients), #23:** `POST /api/v1/evidence/links`
+  now requires a BitRep v1 `attestation` envelope bound to the link and verified against the
+  operator trust snapshot (`BITREP_TRUST_REGISTRY`). Unsigned, forged, unknown-issuer, expired,
+  revoked, wrong-audience or mismatched attestations get 401/422 and nothing is stored;
+  no trust snapshot gives 503. `attested_by` must equal the signed issuer. Idempotent
+  resubmission returns 200; attestation-id reuse for a different statement returns 409.
+  Link responses gain optional `attestation_id` and `attestation_statement_digest`.
+  Minimal BitRep verifier vendored at pin 5b5077d into `app/bitrep_verify/`.
+  `EvidenceService.create_link` itself is unchanged and does not verify identity.
+- **Behaviour change, #24:** `independence_score` counts distinct `source_identifier`
+  (not evidence ids); five records from one source now give 0.2, not 1.0.
+- `requires-python` raised to `>=3.10`. See docs/BITREP_LINK_ATTESTATION.md for migration.
+
 ## Unreleased — decentralized reference slice
 
 - Add a non-upgradeable local EVM protocol for permissionless claim registration,

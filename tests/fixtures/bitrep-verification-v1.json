@@ -1,0 +1,49 @@
+{
+  "warning": "PUBLIC SYNTHETIC TEST KEY; NEVER DEPLOY",
+  "evaluated_at": 1800000000,
+  "content_utf8": "synthetic evidence",
+  "attestation": {
+    "statement": {
+      "protocol_version": "bitrep-attestation/1",
+      "algorithm": "Ed25519",
+      "attestation_id": "test-001",
+      "issuer": "issuer:alice",
+      "key_id": "key:1",
+      "subject": "claim:42",
+      "statement_type": "asserts",
+      "audience": "index:test",
+      "content_digest": "sha256:48736e58b409ed0241c8d7bed9dc188a59e13002f48e7492850bec15b59147b6",
+      "issued_at": 1799999990,
+      "not_before": 1799999990,
+      "expires_at": 1800000100
+    },
+    "signature": "z/ykXniodMR6TYT9IPUDfAl80IFZPPOrbC5D0JJmaY/wOk84bu3AGgic5Hf49U5CHYM31VzSb/ce2Q7zKCOXBg=="
+  },
+  "trust": {
+    "registry_version": "bitrep-trust/1",
+    "audience": "index:test",
+    "published_at": 1799999900,
+    "valid_until": 1800001000,
+    "keys": [
+      {
+        "issuer": "issuer:alice",
+        "key_id": "key:1",
+        "public_key": "A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=",
+        "valid_from": 1799999900,
+        "valid_until": 1800001000,
+        "revoked_at": null
+      }
+    ]
+  },
+  "canonical_ascii": "BitRep attestation v1\n{\"algorithm\":\"Ed25519\",\"attestation_id\":\"test-001\",\"audience\":\"index:test\",\"content_digest\":\"sha256:48736e58b409ed0241c8d7bed9dc188a59e13002f48e7492850bec15b59147b6\",\"expires_at\":1800000100,\"issued_at\":1799999990,\"issuer\":\"issuer:alice\",\"key_id\":\"key:1\",\"not_before\":1799999990,\"protocol_version\":\"bitrep-attestation/1\",\"statement_type\":\"asserts\",\"subject\":\"claim:42\"}",
+  "verification": {
+    "result_version": "bitrep-verification/1",
+    "outcome": "verified",
+    "reason": "ok",
+    "evaluated_at": 1800000000,
+    "statement_digest": "sha256:a2bd4cd79a2ad5931c546d9882026471fc4ecc95615dedb8a12c8b15f13e8ba1",
+    "trust_snapshot": "sha256:481d9f8299fd0ffea9767659dd0bea0bd001a98e80af980e3c1233b2e2b5d0e8",
+    "key_status_at": 1800000000,
+    "assurance": "issuer_signature_only"
+  }
+}
