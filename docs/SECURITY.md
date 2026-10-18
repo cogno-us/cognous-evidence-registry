@@ -15,7 +15,7 @@
 
 ## Overview
 
-The Index implements multiple security layers to ensure the integrity, authenticity, and privacy of scientific claims and evidence. This document outlines our security principles, implemented measures, and vulnerability reporting process.
+The legacy API implements none of these as guarantees: it has no authentication, record identities are caller-chosen, and records are not signed or verified, apart from link `attested_by` (BitRep v1 link attestation). Integrity and attribution claims apply only to the chain profile (`chain/PROTOCOL.md`). The sections below describe design principles and what each helper does. This document outlines our security principles, implemented measures, and vulnerability reporting process.
 
 ## Security Principles
 
@@ -29,7 +29,7 @@ Core data structures are designed to be immutable once created, with only comput
 All security mechanisms are open and auditable. No security through obscurity.
 
 ### 4. Decentralization
-No single authority controls the system. Security emerges from cryptographic guarantees and community consensus.
+Design goal. The legacy API has no consensus mechanism and no cryptographic guarantee of its own; the chain profile (`chain/PROTOCOL.md`) is the only part with chain-backed records.
 
 ### 5. Privacy
 Support for selective disclosure and zero-knowledge proofs to protect sensitive information while maintaining verifiability.

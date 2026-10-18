@@ -247,3 +247,53 @@ def test_no_mutable_evidence_or_link_aliases(evidence_service, sample_evidence_d
     ]:
         returned.strength = 0.0
     assert evidence_service.get_links_for_claim("claim_x")[0] == expected_link
+
+
+def _link(evidence_service, evidence_id, relation=RelationType.SUPPORTS, strength=0.9):
+    return evidence_service.create_link(
+        LinkCreate(
+            claim_id="dup_claim",
+            evidence_id=evidence_id,
+            relation_type=relation,
+            strength=strength,
+            attested_by="tester",
+        )
+    )
+
+
+def test_repeated_identical_links_do_not_multiply_weight(evidence_service, sample_evidence_data):
+    """Result consistency: one evidence record linked repeatedly with the same relation counts once."""
+    evidence = evidence_service.submit_evidence(EvidenceCreate(**sample_evidence_data))
+    _link(evidence_service, evidence.id)
+    once = evidence_service.compute_epistemic_status("dup_claim").supporting_weight
+    for _ in range(9):
+        _link(evidence_service, evidence.id)
+    many = evidence_service.compute_epistemic_status("dup_claim")
+    assert many.supporting_weight == once
+    assert many.status == ClaimStatus.PROPOSED  # 0.9 * quality stays below the supported threshold
+
+
+def test_repeated_links_count_the_strongest_one(evidence_service, sample_evidence_data):
+    evidence = evidence_service.submit_evidence(EvidenceCreate(**sample_evidence_data))
+    _link(evidence_service, evidence.id, strength=0.2)
+    _link(evidence_service, evidence.id, strength=0.9)
+    _link(evidence_service, evidence.id, strength=0.5)
+    status = evidence_service.compute_epistemic_status("dup_claim")
+    assert status.supporting_weight == evidence.quality_score * 0.9
+
+
+def test_distinct_evidence_and_opposing_relations_still_count(evidence_service, sample_evidence_data):
+    """Valid controls: dedupe is per (evidence, relation), not per claim."""
+    weights = []
+    for i in range(3):
+        data = sample_evidence_data.copy()
+        data["source_identifier"] = f"doi:10.1234/dedupe_{i}"
+        evidence = evidence_service.submit_evidence(EvidenceCreate(**data))
+        _link(evidence_service, evidence.id)
+        weights.append(evidence.quality_score * 0.9)
+    assert evidence_service.compute_epistemic_status("dup_claim").supporting_weight == sum(weights)
+    other = evidence_service.submit_evidence(EvidenceCreate(**sample_evidence_data))
+    _link(evidence_service, other.id, RelationType.SUPPORTS)
+    _link(evidence_service, other.id, RelationType.CONTRADICTS)
+    status = evidence_service.compute_epistemic_status("dup_claim")
+    assert status.contradicting_weight == other.quality_score * 0.9

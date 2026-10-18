@@ -26,18 +26,18 @@ All Index Operations follow the canonical schema defined in [operations/README.m
 
 | Index_Key | Title | Status | Version | Description |
 |-----------|-------|--------|---------|-------------|
-| [IIO-PARITY](operations/IIO-PARITY.md) | Parity | Active | 1.0 | Asserts and verifies structural and representational consistency between corresponding records across layers |
-| [IIO-DRIFT](operations/IIO-DRIFT.md) | Drift Detection | Active | 1.0 | Identifies record deviations from their last known valid state without an authorized governance action |
-| [IIO-CANON](operations/IIO-CANON.md) | Canonicalization | Active | 1.0 | Establishes and enforces the single authoritative form of each record, identifier, and term |
-| [IIO-REBIND](operations/IIO-REBIND.md) | Rebinding | Active | 1.0 | Updates all live link and reference records when a canonical identifier or ontology term is superseded |
-| [IIO-TRAVERSE](operations/IIO-TRAVERSE.md) | Traversal Optimization | Active | 1.0 | Ensures all graph traversal paths through the link layer are consistent, complete, and non-redundant |
-| [IIO-LINEAGE](operations/IIO-LINEAGE.md) | Lineage | Active | 1.0 | Constructs, verifies, and preserves the complete ancestry chain of every record from origin through all authorized mutations |
+| [IIO-PARITY](operations/IIO-PARITY.md) | Parity | Proposed (not implemented) | 1.0 | Asserts and verifies structural and representational consistency between corresponding records across layers |
+| [IIO-DRIFT](operations/IIO-DRIFT.md) | Drift Detection | Proposed (not implemented) | 1.0 | Identifies record deviations from their last known valid state without an authorized governance action |
+| [IIO-CANON](operations/IIO-CANON.md) | Canonicalization | Proposed (not implemented) | 1.0 | Establishes and enforces the single authoritative form of each record, identifier, and term |
+| [IIO-REBIND](operations/IIO-REBIND.md) | Rebinding | Proposed (not implemented) | 1.0 | Updates all live link and reference records when a canonical identifier or ontology term is superseded |
+| [IIO-TRAVERSE](operations/IIO-TRAVERSE.md) | Traversal Optimization | Proposed (not implemented) | 1.0 | Ensures all graph traversal paths through the link layer are consistent, complete, and non-redundant |
+| [IIO-LINEAGE](operations/IIO-LINEAGE.md) | Lineage | Proposed (not implemented) | 1.0 | Constructs, verifies, and preserves the complete ancestry chain of every record from origin through all authorized mutations |
 
 ---
 
 ## Invariants
 
-The following cross-cutting invariants hold across all layers of The Index protocol. Each invariant is enforced by one or more Index Operations.
+The following are design targets for The Index protocol; the Index Operations that would enforce them are proposed and not implemented, and the legacy stores do not enforce I-1 or I-2 (see `chain/PROTOCOL.md`: reference existence is not enforced on the default path).
 
 | ID | Invariant | Enforced By |
 |----|-----------|-------------|

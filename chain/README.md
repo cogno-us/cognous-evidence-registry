@@ -11,7 +11,7 @@ never accepts a `verified` boolean or verification-result JSON as proof.
 
 Run **Actions → Chain and BitRep cross-component qualification** in GitHub. The workflow uses the canonical testing repository, the exact owning source commit, pinned BitRep `5b5077dafde232a7801cb425c4efddcffb468723`, the existing npm lock, Python 3.12 and Node 24. It runs only synthetic signing and disposable loopback EVM targets. No funds or public RPC are used.
 
-The test drivers moved to [cognous-stack-qualification](https://github.com/cogno-us/cognous-stack-qualification/tree/43fb81dc3ec0da17402bef274dcec1831cc5e160/suites/cognous-evidence-registry). See [the source map](../CROSS_COMPONENT_TESTS.md). The old npm test entrypoints now fail with this relocation notice; they do not silently claim success. The adapter, contract and clients remain here. Historical commands and measurements in VALIDATION.md retain their recorded scope.
+The test drivers moved to [cognous-stack-qualification](https://github.com/cogno-us/cognous-stack-qualification/tree/39f038435afdd71ba162860faa5718d90d7bde64/suites/cognous-evidence-registry). See [the source map](../CROSS_COMPONENT_TESTS.md). The old npm test entrypoints now fail with this relocation notice; they do not silently claim success. The adapter, contract and clients remain here. Historical commands and measurements in VALIDATION.md retain their recorded scope.
 
 The standalone adapter CLI accepts files and a **locally trusted** snapshot digest:
 
