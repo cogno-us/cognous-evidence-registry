@@ -1,7 +1,5 @@
 # The Index
 
-[![Tests](https://img.shields.io/badge/tests-60%20passing-brightgreen)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen)](htmlcov/)
 [![Python](https://img.shields.io/badge/python-3.9+-blue)](pyproject.toml)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green)](requirements.txt)
 
@@ -37,7 +35,7 @@ The Index provides a structured, transparent system for:
 - Transparent proposal lifecycle (draft → active → passed/rejected)
 
 ### 🔒 Security & Trust
-- Cryptographic signature verification
+- Signature verification: BitRep v1 link attestation and the chain-profile adapter only; other legacy API records are accepted unsigned
 - Placeholder zero-knowledge proofs for claim evidence
 - Input validation with Pydantic
 - BitRep integration for identity and reputation (planned)
@@ -232,7 +230,7 @@ See [DEVELOPER_SETUP.md](DEVELOPER_SETUP.md) for detailed development environmen
 ## Security
 
 The Index implements multiple security layers:
-- Cryptographic signature verification for attestations
+- Signature verification: BitRep v1 link attestation and the chain-profile adapter only; other legacy API records are accepted unsigned
 - Input validation with Pydantic
 - Placeholder zero-knowledge proofs
 - BitRep integration for identity and reputation (planned)

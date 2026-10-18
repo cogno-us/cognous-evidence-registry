@@ -2,10 +2,10 @@
 Evidence Layer Implementation
 
 This module enforces protocol invariants and provides storage/retrieval
-functionality for evidence with immutability guarantees.
+functionality for evidence in an in-memory store (defensive copies and a checksum, not an immutable audit trail).
 
 Protocol Invariants:
-- Evidence MUST be referenced by at least one claim
+- Evidence MUST be referenced by at least one claim (design target: this store does not check claim references; only the link layer takes an optional `validate_references` callback)
 - Evidence MUST include a provenance chain
 - Evidence MUST be immutable after creation
 - Evidence MUST have valid checksum for integrity

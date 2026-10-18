@@ -3,7 +3,7 @@ Title: Lineage
 Index_Key: IIO-LINEAGE
 Type: Index Operation
 Layer: Governance Layer
-Status: Active
+Status: Proposed (not implemented)
 Canonical: true
 Version: 1.0
 Parent: Index Integrity Operations (IIO)

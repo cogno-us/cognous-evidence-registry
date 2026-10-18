@@ -200,19 +200,25 @@ class EvidenceService:
         # many records citing one source are one source (issue #24).
         evidence_sources = set()
 
+        # One evidence record linked repeatedly with the same relation counts once, at the strongest link.
+        strongest: Dict[Tuple[str, RelationType], float] = {}
         for link in links:
             if link.evidence_id:
-                evidence = self._evidence.get(link.evidence_id)
-                if evidence:
-                    # Weight by evidence quality and link strength
-                    weight = evidence.quality_score * link.strength
+                key = (link.evidence_id, link.relation_type)
+                strongest[key] = max(strongest.get(key, link.strength), link.strength)
 
-                    if link.relation_type in [RelationType.SUPPORTS, RelationType.WEAKLY_SUPPORTS]:
-                        supporting_weight += weight
-                    elif link.relation_type == RelationType.CONTRADICTS:
-                        contradicting_weight += weight
+        for (evidence_id, relation_type), strength in strongest.items():
+            evidence = self._evidence.get(evidence_id)
+            if evidence:
+                # Weight by evidence quality and link strength
+                weight = evidence.quality_score * strength
 
-                    evidence_sources.add(self._source_key(evidence.source_identifier))
+                if relation_type in [RelationType.SUPPORTS, RelationType.WEAKLY_SUPPORTS]:
+                    supporting_weight += weight
+                elif relation_type == RelationType.CONTRADICTS:
+                    contradicting_weight += weight
+
+                evidence_sources.add(self._source_key(evidence.source_identifier))
 
         # Calculate independence score based on diversity of sources
         independence_score = min(len(evidence_sources) / 5.0, 1.0)
