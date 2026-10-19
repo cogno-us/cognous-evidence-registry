@@ -131,30 +131,6 @@ class EvidenceStore:
         
         return True
 
-    def get_claim_references(self, evidence_id: str) -> List[str]:
-        """
-        Get all claims that reference this evidence.
-        
-        Args:
-            evidence_id: Evidence identifier
-            
-        Returns:
-            List of claim IDs that reference this evidence
-        """
-        return self._claim_references.get(evidence_id, [])
-
-    def is_referenced(self, evidence_id: str) -> bool:
-        """
-        Check if evidence is referenced by at least one claim.
-        
-        Args:
-            evidence_id: Evidence identifier
-            
-        Returns:
-            True if referenced, False otherwise
-        """
-        return len(self._claim_references.get(evidence_id, [])) > 0
-
     def list_by_type(self, evidence_type: str) -> List[Dict]:
         """
         List all evidence of a specific type.

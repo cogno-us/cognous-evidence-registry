@@ -102,44 +102,6 @@ class ClaimStore:
         """
         return deepcopy(self._claims.get(claim_id))
 
-    def list_by_contributor(self, contributor_id: str) -> List[Dict]:
-        """
-        List all claims by a specific contributor.
-        
-        Args:
-            contributor_id: BitRep identity of contributor
-            
-        Returns:
-            List of claim dictionaries
-        """
-        claim_ids = self._claims_by_contributor.get(contributor_id, [])
-        return [deepcopy(self._claims[cid]) for cid in claim_ids if cid in self._claims]
-
-    def list_by_domain(self, domain: str) -> List[Dict]:
-        """
-        List all claims in a specific domain.
-        
-        Args:
-            domain: Domain tag to filter by
-            
-        Returns:
-            List of claim dictionaries
-        """
-        claim_ids = self._claims_by_domain.get(domain, [])
-        return [deepcopy(self._claims[cid]) for cid in claim_ids if cid in self._claims]
-
-    def list_by_status(self, status: str) -> List[Dict]:
-        """
-        List all claims with a specific status.
-        
-        Args:
-            status: Epistemic status to filter by
-            
-        Returns:
-            List of claim dictionaries
-        """
-        return [deepcopy(claim) for claim in self._claims.values() if claim.get("status") == status]
-
     def update_status(self, claim_id: str, new_status: str) -> bool:
         """
         Update the epistemic status of a claim.
