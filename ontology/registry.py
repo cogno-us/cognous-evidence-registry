@@ -245,20 +245,6 @@ class OntologyRegistry:
                     evidence_types.append(term.get("id"))
         return list(set(evidence_types))
 
-    def get_status_types(self) -> List[str]:
-        """
-        Get all valid status types from registered ontologies.
-        
-        Returns:
-            List of status type identifiers
-        """
-        status_types = []
-        for ontology in self._ontologies.values():
-            for term in ontology.get("terms", []):
-                if term.get("type") == "status":
-                    status_types.append(term.get("id"))
-        return list(set(status_types))
-
     def is_deprecated(self, term_id: str) -> bool:
         """
         Check if a term is deprecated.
