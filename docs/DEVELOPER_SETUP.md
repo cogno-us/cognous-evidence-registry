@@ -1,6 +1,6 @@
 # Developer Setup Guide
 
-This guide will help you set up your development environment for contributing to The Index.
+This guide will help you set up your development environment for contributing to The Index. It covers the legacy API and glossary surface, which is non-authoritative; the accepted local-chain slice is documented in [chain/README.md](../chain/README.md).
 
 ## Table of Contents
 
@@ -17,7 +17,7 @@ This guide will help you set up your development environment for contributing to
 
 ### Required Software
 
-- **Python 3.9+**: [Download](https://www.python.org/downloads/)
+- **Python 3.10+**: [Download](https://www.python.org/downloads/)
 - **Git**: [Download](https://git-scm.com/downloads/)
 - **pip**: Usually comes with Python
 
@@ -392,7 +392,7 @@ GOVERNANCE_QUADRATIC_SCALING=true
 
 **Dockerfile** (create if needed):
 ```dockerfile
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
