@@ -1,3 +1,5 @@
+> **Surface:** this page describes the legacy glossary entry format ([docs/INDEX.md](docs/INDEX.md)), not the accepted local-chain slice. For the chain slice, see the [README](README.md) and [chain/README.md](chain/README.md).
+
 # Contributing to The Index
 
 Thank you for your interest in contributing to The Index! This document outlines the rules and guidelines for adding entries.
@@ -5,7 +7,7 @@ Thank you for your interest in contributing to The Index! This document outlines
 ## Rules for Adding Entries
 
 ### 1. Entry Structure
-All entries must follow the standardized format defined in [INDEX.md](INDEX.md):
+All entries must follow the standardized format defined in [docs/INDEX.md](docs/INDEX.md):
 - **Term**: The name or concept being defined
 - **Definition**: A clear, concise explanation
 - **Verifiable Claim**: A factual statement that can be independently verified
@@ -20,7 +22,7 @@ All entries must follow the standardized format defined in [INDEX.md](INDEX.md):
 
 ### 3. Formatting Requirements
 - Use Markdown formatting consistently
-- Follow the existing entry structure in INDEX.md
+- Follow the existing entry structure in docs/INDEX.md
 - Ensure proper spelling and grammar
 - Use appropriate heading levels
 
@@ -37,7 +39,7 @@ All entries must follow the standardized format defined in [INDEX.md](INDEX.md):
 ### 6. Submission Process
 1. Fork the repository
 2. Create a new branch for your entry
-3. Add your entry following the format in INDEX.md
+3. Add your entry following the format in docs/INDEX.md
 4. Submit a pull request with a clear description
 5. Be responsive to review feedback
 
@@ -54,7 +56,7 @@ Pull requests will be reviewed for:
 If you have questions about contributing, please open an issue for discussion before submitting your entry.
 # Contribution Guidelines
 
-All contributions must follow the entry format defined in `INDEX.md`.
+All contributions must follow the entry format defined in `docs/INDEX.md`.
 
 ## Rules
 1. Each entry must contain a **verifiable claim**.  
@@ -67,6 +69,6 @@ All contributions must follow the entry format defined in `INDEX.md`.
    - `feat:` only if adding new indexing capabilities  
 
 ## Process
-- Add or modify entries in `INDEX.md`.  
+- Add or modify entries in `docs/INDEX.md`.  
 - Submit a pull request with a clear description.  
 - Ensure all entries maintain internal consistency.

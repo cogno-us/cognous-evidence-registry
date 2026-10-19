@@ -1,7 +1,9 @@
 # The Index
 
-[![Python](https://img.shields.io/badge/python-3.9+-blue)](pyproject.toml)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green)](requirements.txt)
+> **Surface:** this page describes the legacy FastAPI and glossary project, a non-authoritative demonstration surface. The accepted local-chain slice is documented in the [repository README](../README.md) and [chain/README.md](../chain/README.md).
+
+[![Python](https://img.shields.io/badge/python-3.10+-blue)](../pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green)](../requirements.txt)
 
 **A Protocol for Verifiable Scientific Knowledge Built on BitRep**
 
