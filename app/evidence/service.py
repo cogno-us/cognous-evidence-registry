@@ -321,8 +321,9 @@ class EvidenceService:
 
     @classmethod
     def _fold_path(cls, path: str) -> str:
-        """Percent-decode unreserved characters, drop empty and ``.`` segments, resolve ``..``, drop the trailing slash."""
-        path = cls._UNRESERVED_PCT.sub(lambda m: chr(int(m.group(1), 16)), path)
+        """Percent-decode unreserved characters, drop empty and ``.`` segments, resolve ``..``, drop the trailing slash.
+        A trailing dot on a segment is kept: ``/a.`` and ``/a`` are different resources."""
+        path = cls._UNRESERVED_PCT.sub(lambda m: chr(int(m.group(1), 16)).casefold(), path)
         out: list[str] = []
         for seg in path.split("/"):
             if seg == "..":
@@ -330,9 +331,67 @@ class EvidenceService:
                     out.pop()
             elif seg not in ("", "."):
                 out.append(seg)
-        if out and set(out[-1]) != {"."}:
-            out[-1] = out[-1].rstrip(".")  # a trailing dot on the last segment is dropped, never a ``..`` segment
         return "/" + "/".join(out) if out else ""
+
+    _HOST_SEPARATORS = str.maketrans({"\u3002": ".", "\uff0e": ".", "\uff61": "."})  # IDNA full stops
+    _PCT_RESERVED = re.compile(r"(%(?:2f|3f|23|40|3a|5b|5d|25))", re.IGNORECASE)  # / ? # @ : [ ] %
+    _PCT_NON_ASCII = re.compile(r"(?:%[89a-fA-F][0-9a-fA-F])+")
+    _URLISH = re.compile(
+        r"^(?:https?://|doi:|info:doi/|urn:doi:|arxiv:|10\.\d{4,9}/|(?:www\.|dx\.|export\.)?(?:doi|arxiv|alphaxiv)\.org|hdl\.handle\.net)",
+        re.IGNORECASE,
+    )
+    _KNOWN_HOSTS = frozenset({
+        "doi.org", "www.doi.org", "dx.doi.org", "hdl.handle.net", "arxiv.org", "www.arxiv.org", "export.arxiv.org",
+        "alphaxiv.org", "www.alphaxiv.org",
+    })
+    _PCT_DOI_KEEP = re.compile(r"(%(?:3f|23|25))", re.IGNORECASE)
+    _URL_STRIP = re.compile(r"[\t\n\r]")
+
+    @classmethod
+    def _decode_non_ascii_pct(cls, text: str) -> str:
+        """Decode percent-encoded non-ASCII UTF-8 (``%C3%A4`` is ``ä``) so it takes the same folding as the literal
+        character. Runs that are not valid UTF-8 are left alone; ASCII encodings are not touched here."""
+        def repl(m: "re.Match[str]") -> str:
+            try:
+                return urllib.parse.unquote(m.group(0), errors="strict")
+            except UnicodeDecodeError:
+                return m.group(0)
+        return cls._PCT_NON_ASCII.sub(repl, text)
+
+    @classmethod
+    def _normalise_authority(cls, text: str, keep_userinfo: bool) -> str:
+        """Rewrite the authority of an http(s) URL, or of a scheme-less spelling on a known resolver host, to a canonical
+        host: percent-decoded (never ``%2F %3F %23 %40 %3A %5B %5D %25``), IDNA full stops folded, trailing dots,
+        a ``www.`` prefix kept as is, an empty or default port dropped, and userinfo dropped unless ``keep_userinfo``.
+        Anything that does not parse is returned unchanged."""
+        m = re.match(r"^(?P<scheme>https?)://(?P<auth>[^/?#]*)(?P<rest>.*)$", text, re.DOTALL)
+        scheme = None
+        if m:
+            scheme = m.group("scheme")
+        else:
+            m = re.match(r"^(?P<auth>[^/?#]*)(?P<rest>.*)$", text, re.DOTALL)
+        if not m or not m.group("auth"):
+            return text
+        userinfo, at, hostport = m.group("auth").rpartition("@")
+        if hostport.startswith("["):
+            return text
+        host, colon, port = hostport.partition(":")
+        if colon and (port and not port.isdigit()):
+            return text
+        parts = cls._PCT_RESERVED.split(host)
+        host = "".join(p if i % 2 else urllib.parse.unquote(p) for i, p in enumerate(parts))
+        host = cls._clean(unicodedata.normalize("NFKC", host)).casefold().translate(cls._CONFUSABLES)
+        host = host.translate(cls._HOST_SEPARATORS).rstrip(".")
+        if not host or " " in host:
+            return text
+        if scheme is None and host not in cls._KNOWN_HOSTS:
+            return text
+        if port and (int(port) in (80, 443) if scheme is None else int(port) == cls._DEFAULT_PORTS[scheme]):
+            port = ""
+        out = (f"{scheme}://" if scheme else "") + (userinfo + "@" if keep_userinfo and at else "") + host
+        if port:
+            out += ":" + port
+        return out + m.group("rest")
 
     @classmethod
     def _fold_url(cls, text: str) -> str:
@@ -369,11 +428,17 @@ class EvidenceService:
         (``doi:``, ``info:doi/``, ``urn:doi:``, doi.org / www.doi.org / dx.doi.org / hdl.handle.net URLs, bare
         ``10.x/y``; percent-decoded, one trailing slash dropped) reduce to ``doi:<doi>`` and arXiv ids (``arxiv:``,
         arxiv.org / export.arxiv.org abs|pdf|html URLs and alphaxiv.org abs|pdf|overview URLs, version dropped) to
-        ``arxiv:<id>``. Other http(s) URLs fold scheme, leading ``www.``, default port, host case, fragment and one
+        ``arxiv:<id>``. Before that matching the host is normalised: percent-decoded (not ``%2F %3F %23 %40 %3A %5B %5D %25``),
+        IDNA full stops (U+3002, U+FF0E, U+FF61) folded, trailing dots, an empty or default port and userinfo dropped
+        (userinfo is kept for other URLs); tab, newline and carriage return inside an http(s) URL are removed as WHATWG
+        does, and percent-encoded non-ASCII is decoded so ``/%C3%A4`` and ``/ä`` are one path. In a DOI ``%3F``, ``%23`` and ``%25`` stay encoded
+        (they would otherwise become delimiters or double-decode), the suffix is opaque (no ``//`` collapse, no trailing
+        dot drop; only trailing slashes and case are folded). Other http(s) URLs fold scheme, leading ``www.``, default port, host case, fragment and one
         trailing slash (the query string is kept); the path also drops ``.``/``..`` segments, empty segments (``//``)
         and percent-encoding of unreserved characters. Before matching, control, format, private-use, unassigned and
         default-ignorable/blank characters (Hangul fillers, braille blank) are removed, every space-like character is a
-        plain space, slash lookalikes (U+2215 and similar) become ``/``, and trailing dots are dropped (2026-10-23).
+        plain space, slash lookalikes (U+2215 and similar) become ``/`` (2026-10-23). A trailing dot on a URL path segment is kept
+        (2026-10-22 wave 7: ``/a.`` and ``/a`` are different resources). The result is iterated to a fixed point.
 
         Not folded (2026-10-22 note, replacing an earlier claim that errors only ever count fewer sources): a DOI
         against a publisher URL, a bare arXiv number, other aliases, mirrors and redirects of one work, query-string
@@ -382,26 +447,50 @@ class EvidenceService:
         counts fewer independent sources; spellings that are not folded still count as separate sources.
         """
         cls = EvidenceService
+        key = source_identifier
+        for _ in range(6):  # each pass is idempotent on almost every input; iterate so that the result is a fixed point
+            nxt = cls._source_key_once(key)
+            if nxt == key:
+                break
+            key = nxt
+        return key
+
+    @staticmethod
+    def _source_key_once(source_identifier: str) -> str:
+        cls = EvidenceService
         text = cls._clean(unicodedata.normalize("NFKC", source_identifier))
+        # WHATWG URL parsing removes tab, newline and carriage return anywhere in a URL (elsewhere they are spaces).
+        stripped = cls._clean(unicodedata.normalize("NFKC", cls._URL_STRIP.sub("", source_identifier)))
+        if stripped.casefold().startswith(("http://", "https://")):
+            text = stripped
+        if cls._URLISH.match(text):
+            text = cls._decode_non_ascii_pct(text)
         text = "".join(
             ch for ch in unicodedata.normalize("NFKD", text) if unicodedata.category(ch) not in ("Mn", "Me")
         )
         text = cls._clean(unicodedata.normalize("NFKC", text)).casefold()
         text = text.translate(cls._CONFUSABLES)
+        # The host is normalised before any DOI or arXiv matching so that ``doi.org.``, ``doi.org:443``, userinfo,
+        # IDNA full stops and a percent-encoded host do not defeat it.
+        core = cls._normalise_authority(text, keep_userinfo=False)
         for pattern in (cls._ARXIV_URL, cls._ARXIV_SCHEME):
-            match = pattern.match(text.rstrip("."))
+            match = pattern.match(core)
             if match:
                 return "arxiv:" + match.group("id")
-        # Percent-decoding is limited to DOIs: ``%2F`` in a resolver URL is the same DOI as ``/``.
-        decoded = cls._clean(urllib.parse.unquote(text)).rstrip(".")
+        # Percent-decoding is limited to DOIs: ``%2F`` in a resolver URL is the same DOI as ``/``. ``%3F``, ``%23`` and
+        # ``%25`` stay encoded: decoding them would turn data into a delimiter (``10.1/a%3Fb`` is not ``10.1/a``).
+        decoded = cls._clean("".join(
+            part if i % 2 else urllib.parse.unquote(part) for i, part in enumerate(cls._PCT_DOI_KEEP.split(core))
+        ))
         for pattern in (cls._DOI_URL, cls._DOI_SCHEME, cls._DOI_BARE):
             match = pattern.match(decoded)
             if match:
-                doi = re.sub(r"/{2,}", "/", match.group("doi").rstrip())
-                if doi.endswith("/"):
-                    doi = doi[:-1]
+                doi = match.group("doi").rstrip().rstrip("/").casefold()  # slashes only at the end; none inside are collapsed
                 return "doi:" + doi
-        return cls._fold_url(cls._DOI_PREFIX.sub("doi:", text, count=1))
+        folded, n = cls._DOI_PREFIX.subn("doi:", core, count=1)
+        if n:
+            return folded
+        return cls._fold_url(cls._normalise_authority(text, keep_userinfo=True))
 
     def _calculate_quality_score(self, evidence_data: EvidenceCreate) -> float:
         """

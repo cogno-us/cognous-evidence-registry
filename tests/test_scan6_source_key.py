@@ -35,23 +35,25 @@ def test_percent_encoded_control_in_doi_folds():
     assert key("https://doi.org/10.1234/abc%E2%A0%80") == "doi:10.1234/abc"
 
 
+# wave 7 (T2-E): the scan6 tests here folded a trailing dot and a doubled slash inside a DOI suffix. DOI suffixes are
+# opaque, so ``10.1234/abc.`` and ``10.1234//abc`` are different DOIs from ``10.1234/abc``; they no longer fold.
 @pytest.mark.parametrize("spelling", ["doi:10.1234/abc.", "doi:10.1234/abc..", "10.1234/abc.", "https://doi.org/10.1234/abc."])
-def test_trailing_dot_folds(spelling):
-    assert key(spelling) == "doi:10.1234/abc"
+def test_trailing_dot_in_doi_suffix_stays_distinct(spelling):
+    assert key(spelling) != key("doi:10.1234/abc")
+    assert key(spelling).startswith("doi:10.1234/abc.")
 
 
 @pytest.mark.parametrize("spelling", [
-    "doi:10.1234//abc", "doi:10.1234∕abc", "doi:10.1234⁄abc", "doi:10.1234⧸abc",
-    "https://doi.org/10.1234//abc", "doi:10.1234/abc//",
+    "doi:10.1234∕abc", "doi:10.1234⁄abc", "doi:10.1234⧸abc", "doi:10.1234/abc//", "https://doi.org/10.1234/abc/",
 ])
-def test_doubled_slash_and_slash_lookalikes_fold_in_doi(spelling):
+def test_slash_lookalikes_and_trailing_slashes_fold_in_doi(spelling):
     assert key(spelling) == "doi:10.1234/abc"
 
 
 @pytest.mark.parametrize("spelling", [
     "https://example.org//a", "https://example.org/./a", "https://example.org/b/../a", "https://example.org/%61",
     "https://example.org/%2e/a", "https://example.org/b/%2E%2e/a", "https://example.org∕a", "https://example.org/a/.",
-    "https://example.org/a/b/..", "https://example.org/a//", "https://example.org/x/../../a", "https://example.org/a.",
+    "https://example.org/a/b/..", "https://example.org/a//", "https://example.org/x/../../a",
 ])
 def test_url_path_normalisation(spelling):
     assert key(spelling) == key("https://example.org/a") == "example.org/a"

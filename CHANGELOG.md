@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-22 — source-key: host normalised before DOI/arXiv matching, reserved encodings and DOI suffixes kept distinct (wave 7, T2-D, T2-E)
+
+- **Behaviour change, T2-D (same source, distinct keys):** `EvidenceService._source_key` normalises the URL host before the DOI and
+  arXiv patterns run: trailing dots, empty or default port, userinfo (dropped for DOI/arXiv, kept for other URLs), IDNA full stops
+  (U+3002, U+FF0E, U+FF61) and a percent-encoded host (reserved `%2F %3F %23 %40 %3A %5B %5D %25` stay encoded). So
+  `https://doi.org./10.1000/abc`, `doi.org:443/...`, `user@doi.org`, `arxiv.org./abs/...`, `arxiv.org:443/abs/...`, `example。org` and
+  `%65xample.org` fold like their plain spellings. Percent-encoded non-ASCII is decoded before the Unicode folds (`/%C3%A4` is `/ä`), and
+  tab, newline and carriage return inside an http(s) URL are removed as WHATWG does (in other text they remain spaces). The result is
+  iterated to a fixed point; idempotence over the characters a fold can touch is tested.
+- **Behaviour change, T2-E (different sources merged):** `%3F`, `%23` and `%25` in a DOI stay encoded, so `10.1000/a%3Fb` no longer
+  becomes `10.1000/a`. A DOI suffix is opaque: `//` inside it and a trailing dot are no longer dropped (the 2026-10-23 changes did
+  that); case is still folded (also after percent-decoding) and trailing slashes are still dropped. The trailing-dot drop on the last
+  URL path segment is reverted: `/a.` and `/a` can be different resources and nothing justifies merging them. Existing tests that
+  encoded the merges were changed in tests/test_scan6_source_key.py (`test_trailing_dot_folds` is now
+  `test_trailing_dot_in_doi_suffix_stays_distinct`; the `//` DOI cases and `https://example.org/a.` were removed from the folding lists).
+  New tests are in tests/test_scan7_source_key.py. Weights and status thresholds are unchanged. No pin, lock or refreeze file was touched.
+- **Not changed (documented):** dependence of Cn (unassigned) stripping on the Python `unicodedata` version, and accent folding of hosts.
+
 ## 2026-10-23 — clean-checkout gate trusts the pinned tree; source-key folds invisible characters and URL paths (scan6 F1, F3)
 
 - **Behaviour change, F1:** `chain/python/bitrep_checkout.py` builds the tracked set from `git ls-tree -r` at the pin instead of
