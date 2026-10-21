@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — BitRep pin 981036c3
+
+- Pin the BitRep checkout used by `chain/python/bitrep_adapter.py` to 981036c3 (was 5b5077d), so
+  the chain adapter runs against the attestation revision locked in the hub component lock.
+  Adapter, vendored-verifier header and documentation references are updated to match.
+  `chain/VALIDATION.md` is unchanged as a historical record of the earlier pin.
+- The chain qualification wrapper now calls the qualification workflow that pins 981036c3 and
+  installs its hash-locked requirements on their own. No change to registry behaviour.
+
 ## Unreleased — V1 validation remediation (#23, #24)
 
 - **Behaviour change (breaking for unsigned clients), #23:** `POST /api/v1/evidence/links`

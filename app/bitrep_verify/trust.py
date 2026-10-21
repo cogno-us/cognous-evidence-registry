@@ -1,4 +1,4 @@
-# Vendored verbatim (imports rewritten only) from cogno-us/bitrep @ 5b5077dafde232a7801cb425c4efddcffb468723
+# Vendored verbatim (imports rewritten only) from cogno-us/bitrep @ 981036c315856c71207984797b0c4e48d3b3921d
 # (MIT License, Copyright (c) 2025 BitRep Contributors). Implements docs/VERIFICATION_CONTRACT_V1.md.
 # Do not edit; re-vendor from a new BitRep pin instead. See docs/BITREP_LINK_ATTESTATION.md.
 

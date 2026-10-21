@@ -13,7 +13,7 @@ import sys
 import time
 from pathlib import Path
 
-PIN = "5b5077dafde232a7801cb425c4efddcffb468723"
+PIN = "981036c315856c71207984797b0c4e48d3b3921d"
 
 
 def load_bitrep():
