@@ -164,18 +164,18 @@ class ZKProofPlaceholder:
     @staticmethod
     def verify_proof(proof: str, public_inputs: Dict[str, Any]) -> bool:
         """
-        Verify a placeholder ZK proof.
+        Fail-closed placeholder: no zero-knowledge proof can be verified here.
+
+        A placeholder string is not a proof, so this never reports validity.
 
         Args:
-            proof: ZK proof to verify
-            public_inputs: Public inputs for verification
+            proof: ZK proof to verify (ignored)
+            public_inputs: Public inputs for verification (ignored)
 
         Returns:
-            True if proof is valid (placeholder always returns True)
+            Always False
         """
-        # Placeholder implementation
-        # In production, this would actually verify the proof
-        return proof.startswith("zk_proof_placeholder_")
+        return False
 
 
 # Initialize global instances

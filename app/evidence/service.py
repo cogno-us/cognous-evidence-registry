@@ -5,6 +5,8 @@ This module provides business logic for managing evidence, parsing metadata,
 and linking evidence to claims.
 """
 
+import re
+import unicodedata
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
@@ -207,18 +209,33 @@ class EvidenceService:
                 key = (link.evidence_id, link.relation_type)
                 strongest[key] = max(strongest.get(key, link.strength), link.strength)
 
+        # Weight depends on distinct normalised sources, not on record count: per relation, a source contributes
+        # the weight of its strongest record once. Five records citing one source weigh as much as the best one.
+        weight_by_source: Dict[Tuple[str, str], float] = {}
         for (evidence_id, relation_type), strength in strongest.items():
             evidence = self._evidence.get(evidence_id)
             if evidence:
                 # Weight by evidence quality and link strength
                 weight = evidence.quality_score * strength
+                source = self._source_key(evidence.source_identifier)
 
                 if relation_type in [RelationType.SUPPORTS, RelationType.WEAKLY_SUPPORTS]:
-                    supporting_weight += weight
+                    side = "support"
                 elif relation_type == RelationType.CONTRADICTS:
-                    contradicting_weight += weight
+                    side = "contradict"
+                else:
+                    side = None
+                if side is not None:
+                    key = (side, source)
+                    weight_by_source[key] = max(weight_by_source.get(key, weight), weight)
 
-                evidence_sources.add(self._source_key(evidence.source_identifier))
+                evidence_sources.add(source)
+
+        for (side, _source), weight in weight_by_source.items():
+            if side == "support":
+                supporting_weight += weight
+            else:
+                contradicting_weight += weight
 
         # Calculate independence score based on diversity of sources
         independence_score = min(len(evidence_sources) / 5.0, 1.0)
@@ -248,10 +265,24 @@ class EvidenceService:
             last_computed_at=datetime.utcnow(),
         )
 
+    _DOI_PREFIX = re.compile(r"^(?:https?://)?(?:dx\.)?doi\.org/|^doi:\s*")
+
     @staticmethod
     def _source_key(source_identifier: str) -> str:
-        """Normalise a source identifier so trivially different spellings are one source."""
-        return " ".join(source_identifier.split()).casefold()
+        """Normalise a source identifier so trivially different spellings are one source.
+
+        NFKC, removal of format (Cf) characters such as zero-width ones and of combining marks, whitespace
+        stripped and collapsed, casefold, and the ``doi:``, ``https://doi.org/`` and ``http://dx.doi.org/``
+        prefixes reduced to one ``doi:`` form. Dropping combining marks can merge sources that differ only by
+        accents; that errs towards counting fewer independent sources, never more.
+        """
+        text = unicodedata.normalize("NFKC", source_identifier)
+        text = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
+        text = "".join(
+            ch for ch in unicodedata.normalize("NFKD", text) if unicodedata.category(ch) not in ("Mn", "Me")
+        )
+        text = " ".join(unicodedata.normalize("NFKC", text).split()).casefold()
+        return EvidenceService._DOI_PREFIX.sub("doi:", text, count=1)
 
     def _calculate_quality_score(self, evidence_data: EvidenceCreate) -> float:
         """
