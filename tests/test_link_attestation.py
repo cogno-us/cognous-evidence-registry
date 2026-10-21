@@ -226,7 +226,7 @@ _DOI_SAME = [
     "https://doi.org/10.1234/abc?utm=1", "https://doi.org/10.1234/abc#x", "https://doi.org/doi:10.1234/abc",
 ]
 _DOI_DIFF = [
-    "doi:10.1234/abd", "doi:10.1235/abc", "doi:10.1234/abc.", "doi:10.1234/abc?utm=1", "doi:10.1234/abc#x",
+    "doi:10.1234/abd", "doi:10.1235/abc", "doi:10.1234/abc?utm=1", "doi:10.1234/abc#x",
     "https://publisher.example/10.1234/abc", "https://example.org/doi.org/10.1234/abc", "arxiv:2101.00001",
 ]
 _ARXIV_SAME = [

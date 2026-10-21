@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-23 — clean-checkout gate trusts the pinned tree; source-key folds invisible characters and URL paths (scan6 F1, F3)
+
+- **Behaviour change, F1:** `chain/python/bitrep_checkout.py` builds the tracked set from `git ls-tree -r` at the pin instead of
+  `git ls-files` (the index), and refuses any staged difference between the index and HEAD (`git diff --cached`). A file added with
+  `git add` but not committed is now refused as an untracked importable file, as an uncommitted one already was. Modified tracked
+  files were already refused by the content hash check. The BitRep pin is unchanged.
+- **Behaviour change, F3:** `EvidenceService._source_key` removes control (Cc), format (Cf), private-use (Co), unassigned (Cn) and
+  default-ignorable/blank characters (Hangul fillers U+115F/U+1160/U+3164/U+FFA0, braille blank U+2800, variation selectors,
+  tag characters), treats every Z* and whitespace character as a plain space, folds slash lookalikes (U+2215, U+2044, U+29F8,
+  U+2571) to `/`, drops trailing dots, collapses doubled slashes in DOIs, and for http(s) URLs normalises the path (`.`/`..`
+  segments, empty segments, percent-encoded unreserved characters). Reserved encodings such as `%2f` stay distinct. Existing tests
+  that encoded the old behaviour were changed: `https://example.org/paper//` is now the same source as `.../paper`
+  (tests/test_source_key_folding.py) and `doi:10.1234/abc.` is now the same DOI as `doi:10.1234/abc` (tests/test_link_attestation.py).
+  Weights and status thresholds are unchanged. The `the_index` pin moves again at the separate refreeze; nothing was refrozen here.
+
 ## 2026-10-22 — clean-checkout gate sees nested repos; wider source-key folding (scan5 C-T1-4, C-T2-5)
 
 - **Behaviour change, C-T1-4:** `chain/python/bitrep_checkout.py` no longer relies on `git ls-files --others`, which lists an
