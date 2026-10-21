@@ -294,6 +294,46 @@ class EvidenceService:
     })
     _DEFAULT_PORTS = {"http": 80, "https": 443}
 
+    # Characters that read as a slash: division slash, fraction slash, big solidus, box-drawing diagonal.
+    _SLASHES = str.maketrans({"\u2215": "/", "\u2044": "/", "\u29f8": "/", "\u2571": "/", "\u1735": "/"})
+    # Default_Ignorable_Code_Point characters that are not Cf, plus the braille blank (not ignorable but renders blank).
+    _BLANKS = frozenset(
+        {0x115F, 0x1160, 0x3164, 0xFFA0, 0x2800, 0x034F, 0x17B4, 0x17B5}
+        | set(range(0x180B, 0x1810)) | set(range(0xFE00, 0xFE10)) | set(range(0xFFF0, 0xFFF9))
+        | set(range(0xE0000, 0xE1000))
+    )
+    _UNRESERVED_PCT = re.compile(r"%([46][1-9a-fA-F]|[57][0-9aA]|3[0-9]|2[dDeE]|5[fF]|7[eE])")
+
+    @classmethod
+    def _clean(cls, text: str) -> str:
+        """Slash lookalikes to ``/``, whitespace (any Z* or whitespace control) to one space, and control (Cc), format
+        (Cf), private-use (Co), unassigned (Cn) and default-ignorable/blank characters removed."""
+        text = text.translate(cls._SLASHES)
+        out = []
+        for ch in text:
+            if ch.isspace() or unicodedata.category(ch) in ("Zs", "Zl", "Zp"):
+                out.append(" ")
+            elif unicodedata.category(ch) in ("Cc", "Cf", "Co", "Cn", "Cs") or ord(ch) in cls._BLANKS:
+                continue
+            else:
+                out.append(ch)
+        return " ".join("".join(out).split())
+
+    @classmethod
+    def _fold_path(cls, path: str) -> str:
+        """Percent-decode unreserved characters, drop empty and ``.`` segments, resolve ``..``, drop the trailing slash."""
+        path = cls._UNRESERVED_PCT.sub(lambda m: chr(int(m.group(1), 16)), path)
+        out: list[str] = []
+        for seg in path.split("/"):
+            if seg == "..":
+                if out:
+                    out.pop()
+            elif seg not in ("", "."):
+                out.append(seg)
+        if out and set(out[-1]) != {"."}:
+            out[-1] = out[-1].rstrip(".")  # a trailing dot on the last segment is dropped, never a ``..`` segment
+        return "/" + "/".join(out) if out else ""
+
     @classmethod
     def _fold_url(cls, text: str) -> str:
         """Fold an http(s) URL to ``host[:port]/path[?query]``: scheme, leading ``www.``, a default port, a trailing
@@ -317,7 +357,7 @@ class EvidenceService:
         userinfo = parts.netloc.rpartition("@")[0]
         if userinfo:
             host = f"{userinfo}@{host}"
-        path = parts.path[:-1] if parts.path.endswith("/") else parts.path
+        path = cls._fold_path(parts.path)
         return host + path + (f"?{parts.query}" if parts.query else "")
 
     @staticmethod
@@ -330,7 +370,10 @@ class EvidenceService:
         ``10.x/y``; percent-decoded, one trailing slash dropped) reduce to ``doi:<doi>`` and arXiv ids (``arxiv:``,
         arxiv.org / export.arxiv.org abs|pdf|html URLs and alphaxiv.org abs|pdf|overview URLs, version dropped) to
         ``arxiv:<id>``. Other http(s) URLs fold scheme, leading ``www.``, default port, host case, fragment and one
-        trailing slash (the query string is kept).
+        trailing slash (the query string is kept); the path also drops ``.``/``..`` segments, empty segments (``//``)
+        and percent-encoding of unreserved characters. Before matching, control, format, private-use, unassigned and
+        default-ignorable/blank characters (Hangul fillers, braille blank) are removed, every space-like character is a
+        plain space, slash lookalikes (U+2215 and similar) become ``/``, and trailing dots are dropped (2026-10-23).
 
         Not folded (2026-10-22 note, replacing an earlier claim that errors only ever count fewer sources): a DOI
         against a publisher URL, a bare arXiv number, other aliases, mirrors and redirects of one work, query-string
@@ -338,24 +381,23 @@ class EvidenceService:
         combining marks and the lookalike map can merge sources that differ only by accents or lookalikes, which
         counts fewer independent sources; spellings that are not folded still count as separate sources.
         """
-        text = unicodedata.normalize("NFKC", source_identifier)
-        text = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
+        cls = EvidenceService
+        text = cls._clean(unicodedata.normalize("NFKC", source_identifier))
         text = "".join(
             ch for ch in unicodedata.normalize("NFKD", text) if unicodedata.category(ch) not in ("Mn", "Me")
         )
-        text = " ".join(unicodedata.normalize("NFKC", text).split()).casefold()
-        cls = EvidenceService
+        text = cls._clean(unicodedata.normalize("NFKC", text)).casefold()
         text = text.translate(cls._CONFUSABLES)
         for pattern in (cls._ARXIV_URL, cls._ARXIV_SCHEME):
-            match = pattern.match(text)
+            match = pattern.match(text.rstrip("."))
             if match:
                 return "arxiv:" + match.group("id")
         # Percent-decoding is limited to DOIs: ``%2F`` in a resolver URL is the same DOI as ``/``.
-        decoded = urllib.parse.unquote(text)
+        decoded = cls._clean(urllib.parse.unquote(text)).rstrip(".")
         for pattern in (cls._DOI_URL, cls._DOI_SCHEME, cls._DOI_BARE):
             match = pattern.match(decoded)
             if match:
-                doi = match.group("doi").rstrip()
+                doi = re.sub(r"/{2,}", "/", match.group("doi").rstrip())
                 if doi.endswith("/"):
                     doi = doi[:-1]
                 return "doi:" + doi

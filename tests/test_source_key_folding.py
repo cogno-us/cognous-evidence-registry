@@ -19,7 +19,7 @@ _URL_SAME = [
 _URL_DIFF = [
     "https://example.org/paper2", "https://example.org/Paper/x", "https://example.org/paper?id=2",
     "https://example.org:8443/paper", "https://sub.example.org/paper", "https://example.com/paper",
-    "https://example.org/paper//", "https://user@example.org/paper",
+    "https://user@example.org/paper",
 ]
 
 

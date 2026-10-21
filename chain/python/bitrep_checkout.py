@@ -8,7 +8,9 @@ therefore checked directly:
 2. No tracked file carries an assume-unchanged or skip-worktree flag (``git ls-files -v``: lowercase or ``S``).
 3. Every tracked file exists and its bytes hash to the blob recorded at HEAD (``git ls-tree -r`` against
    ``git hash-object``); line-ending normalisation is accepted only where git's own filters for that path yield the blob.
-4. No untracked or ignored importable file, untracked symlink or nested git repository exists anywhere in the tree.
+4. The index equals HEAD (``git diff --cached``), and "tracked" means present in the pinned tree, not in the index:
+   a file added with ``git add`` but not committed is still refused.
+5. No untracked or ignored importable file, untracked symlink or nested git repository exists anywhere in the tree.
    The tree is walked directly (symlinks not followed, nested ``.git`` directories included), because
    ``git ls-files --others`` lists an untracked directory holding its own ``.git`` as one opaque entry. Only ``*.pyc``
    files under ``__pycache__`` are tolerated: the adapter points ``sys.pycache_prefix`` at an empty private directory
@@ -76,17 +78,22 @@ def checkout_problems(root: Path, pin: str) -> list[str]:
     for rel, digest in zip(differing, hashes(differing)):
         if tree[rel][2] != digest:
             problems.append(f"content differs from the revision: {rel}")
-    problems.extend(_untracked_problems(root))
+    # The tracked set is the pinned tree, not the index: ``git add evil.py`` must not make an uncommitted file look
+    # tracked. The index itself must also equal HEAD (nothing staged, added, deleted or retyped).
+    staged = [rel for rel in _git(root, "diff", "--cached", "--name-only", "-z", head).split("\0") if rel]
+    for rel in staged:
+        problems.append(f"index differs from the revision, staged change: {rel}")
+    problems.extend(_untracked_problems(root, set(tree)))
     return problems
 
 
-def _untracked_problems(root: Path) -> list[str]:
+def _untracked_problems(root: Path, tracked: set[str]) -> list[str]:
     """Walk the whole tree (symlinks not followed, nested ``.git`` directories included) for untracked importables.
 
     ``git ls-files --others`` reports an untracked directory that holds its own ``.git`` as one opaque entry, so a
     nested repository named like a dependency would hide everything inside it. The walk is the authority instead.
+    ``tracked`` is the set of paths in the pinned tree (``git ls-tree -r``), never the index.
     """
-    tracked = {rel for rel in _git(root, "ls-files", "-z").split("\0") if rel}
     found: list[str] = []
 
     def fail(error: OSError) -> None:
