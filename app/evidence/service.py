@@ -7,6 +7,7 @@ and linking evidence to claims.
 
 import re
 import unicodedata
+import urllib.parse
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
@@ -265,15 +266,31 @@ class EvidenceService:
             last_computed_at=datetime.utcnow(),
         )
 
-    _DOI_PREFIX = re.compile(r"^(?:https?://)?(?:dx\.)?doi\.org/|^doi:\s*")
+    _DOI_PREFIX = re.compile(r"^(?:https?://)?(?:dx\.)?doi\.org/|^doi:\s*")  # fallback for non-10.x identifiers
+    # DOI forms folded to ``doi:<doi>``: ``doi:``, ``info:doi/``, ``urn:doi:``, https?://(www.|dx.)doi.org/ (optionally
+    # with a further ``doi:``), schemeless ``doi.org/``, and a bare ``10.<registrant>/<suffix>``. Query and fragment are
+    # dropped only on the resolver-URL forms (the resolver ignores them); in the other forms ``#``/``?`` stay part of
+    # the DOI. One trailing slash is dropped.
+    _DOI_URL = re.compile(r"^(?:https?://)?(?:www\.|dx\.)?doi\.org/(?:doi:\s*)?(?P<doi>10\.\d{4,9}/[^?#]*)(?:[?#].*)?$")
+    _DOI_SCHEME = re.compile(r"^(?:doi:|info:doi/|urn:doi:)\s*(?:https?://(?:www\.|dx\.)?doi\.org/)?(?P<doi>10\.\d{4,9}/.*)$")
+    _DOI_BARE = re.compile(r"^(?P<doi>10\.\d{4,9}/.*)$")
+    # arXiv forms folded to ``arxiv:<id>`` without the version: ``arxiv:``, https?://(www.)arxiv.org/(abs|pdf)/
+    # (optional ``.pdf``), new-style ``YYMM.NNNNN`` and old-style ``archive(.XX)/YYMMNNN`` ids. Bare ids are not merged.
+    _ARXIV_ID = r"(?P<id>\d{4}\.\d{4,5}|[a-z\-]+(?:\.[a-z]{2})?/\d{7})(?:v\d+)?"
+    _ARXIV_URL = re.compile(
+        r"^(?:https?://)?(?:www\.)?arxiv\.org/(?:abs|pdf)/" + _ARXIV_ID + r"(?:\.pdf)?/?(?:[?#].*)?$"
+    )
+    _ARXIV_SCHEME = re.compile(r"^arxiv:\s*" + _ARXIV_ID + r"$")
 
     @staticmethod
     def _source_key(source_identifier: str) -> str:
         """Normalise a source identifier so trivially different spellings are one source.
 
         NFKC, removal of format (Cf) characters such as zero-width ones and of combining marks, whitespace
-        stripped and collapsed, casefold, and the ``doi:``, ``https://doi.org/`` and ``http://dx.doi.org/``
-        prefixes reduced to one ``doi:`` form. Dropping combining marks can merge sources that differ only by
+        stripped and collapsed, casefold. DOIs (``doi:``, ``info:doi/``, ``urn:doi:``, doi.org / www.doi.org /
+        dx.doi.org URLs, bare ``10.x/y``; percent-decoded, one trailing slash dropped) reduce to ``doi:<doi>`` and
+        arXiv ids (``arxiv:`` and arxiv.org abs/pdf URLs, version dropped) to ``arxiv:<id>``. Not unified: a DOI
+        against a publisher URL or a bare arXiv number. Dropping combining marks can merge sources that differ only by
         accents; that errs towards counting fewer independent sources, never more.
         """
         text = unicodedata.normalize("NFKC", source_identifier)
@@ -282,7 +299,21 @@ class EvidenceService:
             ch for ch in unicodedata.normalize("NFKD", text) if unicodedata.category(ch) not in ("Mn", "Me")
         )
         text = " ".join(unicodedata.normalize("NFKC", text).split()).casefold()
-        return EvidenceService._DOI_PREFIX.sub("doi:", text, count=1)
+        cls = EvidenceService
+        for pattern in (cls._ARXIV_URL, cls._ARXIV_SCHEME):
+            match = pattern.match(text)
+            if match:
+                return "arxiv:" + match.group("id")
+        # Percent-decoding is limited to DOIs: ``%2F`` in a resolver URL is the same DOI as ``/``.
+        decoded = urllib.parse.unquote(text)
+        for pattern in (cls._DOI_URL, cls._DOI_SCHEME, cls._DOI_BARE):
+            match = pattern.match(decoded)
+            if match:
+                doi = match.group("doi").rstrip()
+                if doi.endswith("/"):
+                    doi = doi[:-1]
+                return "doi:" + doi
+        return cls._DOI_PREFIX.sub("doi:", text, count=1)
 
     def _calculate_quality_score(self, evidence_data: EvidenceCreate) -> float:
         """

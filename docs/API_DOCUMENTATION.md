@@ -330,10 +330,10 @@ Weight = Evidence Quality Score × Link Strength, summed over every link.
 
 **Limits of this status**: it is a demo computation, not a truth or verification result.
 - No BitRep reputation is applied.
-- Weight counts each distinct normalised `source_identifier` once per relation (its strongest record), and repeated links between the same claim, evidence and relation count once at the strongest link; other aliases of one source are not resolved.
+- Weight counts each distinct normalised `source_identifier` once per relation (its strongest record), and repeated links between the same claim, evidence and relation count once at the strongest link; other aliases of one source (a DOI against a publisher URL, a bare arXiv number) are not resolved.
 - `quality_score` is derived from self-reported submitter metadata (methodology, sample size, uncertainty, replication history), none of which is verified.
 - Link strength is caller-supplied (it is covered by the link attestation, so it cannot be altered after signing, but it is not independently validated). `attested_by` is verified only as a BitRep issuer signature under the operator trust snapshot.
-- `independence_score` counts distinct normalised evidence `source_identifier` values (NFKC, zero-width and combining characters removed, casefolded, DOI prefixes unified; 1 source = 0.2, 5+ = 1.0), not evidence records.
+- `independence_score` counts distinct normalised evidence `source_identifier` values (NFKC, zero-width and combining characters removed, casefolded, DOI and arXiv spellings unified as in docs/BITREP_LINK_ATTESTATION.md; 1 source = 0.2, 5+ = 1.0), not evidence records.
 
 ## Governance API
 
