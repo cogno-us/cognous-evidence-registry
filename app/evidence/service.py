@@ -271,27 +271,72 @@ class EvidenceService:
     # with a further ``doi:``), schemeless ``doi.org/``, and a bare ``10.<registrant>/<suffix>``. Query and fragment are
     # dropped only on the resolver-URL forms (the resolver ignores them); in the other forms ``#``/``?`` stay part of
     # the DOI. One trailing slash is dropped.
-    _DOI_URL = re.compile(r"^(?:https?://)?(?:www\.|dx\.)?doi\.org/(?:doi:\s*)?(?P<doi>10\.\d{4,9}/[^?#]*)(?:[?#].*)?$")
+    _DOI_URL = re.compile(r"^(?:https?://)?(?:(?:www\.|dx\.)?doi\.org|hdl\.handle\.net)/(?:doi:\s*)?(?P<doi>10\.\d{4,9}/[^?#]*)(?:[?#].*)?$")
     _DOI_SCHEME = re.compile(r"^(?:doi:|info:doi/|urn:doi:)\s*(?:https?://(?:www\.|dx\.)?doi\.org/)?(?P<doi>10\.\d{4,9}/.*)$")
     _DOI_BARE = re.compile(r"^(?P<doi>10\.\d{4,9}/.*)$")
     # arXiv forms folded to ``arxiv:<id>`` without the version: ``arxiv:``, https?://(www.)arxiv.org/(abs|pdf)/
     # (optional ``.pdf``), new-style ``YYMM.NNNNN`` and old-style ``archive(.XX)/YYMMNNN`` ids. Bare ids are not merged.
     _ARXIV_ID = r"(?P<id>\d{4}\.\d{4,5}|[a-z\-]+(?:\.[a-z]{2})?/\d{7})(?:v\d+)?"
     _ARXIV_URL = re.compile(
-        r"^(?:https?://)?(?:www\.)?arxiv\.org/(?:abs|pdf)/" + _ARXIV_ID + r"(?:\.pdf)?/?(?:[?#].*)?$"
+        r"^(?:https?://)?(?:(?:www\.|export\.)?arxiv\.org/(?:abs|pdf|html)|(?:www\.)?alphaxiv\.org/(?:abs|pdf|overview))/"
+        + _ARXIV_ID + r"(?:\.pdf)?/?(?:[?#].*)?$"
     )
     _ARXIV_SCHEME = re.compile(r"^arxiv:\s*" + _ARXIV_ID + r"$")
+
+    # Cyrillic and Greek letters that render like a Latin letter (applied after casefold, so lower case only). A
+    # deliberately small list, not the full Unicode confusables table: other scripts and other lookalikes are not folded.
+    _CONFUSABLES = str.maketrans({
+        "\u0430": "a", "\u0435": "e", "\u043e": "o", "\u0440": "p", "\u0441": "c", "\u0443": "y", "\u0445": "x",
+        "\u0456": "i", "\u0458": "j", "\u0455": "s", "\u04bb": "h", "\u0501": "d", "\u051b": "q", "\u051d": "w",
+        "\u043a": "k", "\u0433": "r",
+        "\u03b1": "a", "\u03bf": "o", "\u03c1": "p", "\u03bd": "v", "\u03b9": "i", "\u03ba": "k", "\u03c5": "u",
+        "\u03c7": "x", "\u03c4": "t",
+    })
+    _DEFAULT_PORTS = {"http": 80, "https": 443}
+
+    @classmethod
+    def _fold_url(cls, text: str) -> str:
+        """Fold an http(s) URL to ``host[:port]/path[?query]``: scheme, leading ``www.``, a default port, a trailing
+        dot on the host, a fragment and one trailing slash are dropped. Anything else is returned unchanged."""
+        if not text.startswith(("http://", "https://")):
+            return text
+        try:
+            parts = urllib.parse.urlsplit(text)
+            host, port = parts.hostname, parts.port
+        except ValueError:
+            return text
+        if not host:
+            return text
+        host = host.rstrip(".")
+        if host.startswith("www."):
+            host = host[4:]
+        if ":" in host:
+            host = f"[{host}]"
+        if port is not None and port != cls._DEFAULT_PORTS[parts.scheme]:
+            host = f"{host}:{port}"
+        userinfo = parts.netloc.rpartition("@")[0]
+        if userinfo:
+            host = f"{userinfo}@{host}"
+        path = parts.path[:-1] if parts.path.endswith("/") else parts.path
+        return host + path + (f"?{parts.query}" if parts.query else "")
 
     @staticmethod
     def _source_key(source_identifier: str) -> str:
         """Normalise a source identifier so trivially different spellings are one source.
 
         NFKC, removal of format (Cf) characters such as zero-width ones and of combining marks, whitespace
-        stripped and collapsed, casefold. DOIs (``doi:``, ``info:doi/``, ``urn:doi:``, doi.org / www.doi.org /
-        dx.doi.org URLs, bare ``10.x/y``; percent-decoded, one trailing slash dropped) reduce to ``doi:<doi>`` and
-        arXiv ids (``arxiv:`` and arxiv.org abs/pdf URLs, version dropped) to ``arxiv:<id>``. Not unified: a DOI
-        against a publisher URL or a bare arXiv number. Dropping combining marks can merge sources that differ only by
-        accents; that errs towards counting fewer independent sources, never more.
+        stripped and collapsed, casefold, and a small map of Cyrillic/Greek lookalike letters to Latin. DOIs
+        (``doi:``, ``info:doi/``, ``urn:doi:``, doi.org / www.doi.org / dx.doi.org / hdl.handle.net URLs, bare
+        ``10.x/y``; percent-decoded, one trailing slash dropped) reduce to ``doi:<doi>`` and arXiv ids (``arxiv:``,
+        arxiv.org / export.arxiv.org abs|pdf|html URLs and alphaxiv.org abs|pdf|overview URLs, version dropped) to
+        ``arxiv:<id>``. Other http(s) URLs fold scheme, leading ``www.``, default port, host case, fragment and one
+        trailing slash (the query string is kept).
+
+        Not folded (2026-10-22 note, replacing an earlier claim that errors only ever count fewer sources): a DOI
+        against a publisher URL, a bare arXiv number, other aliases, mirrors and redirects of one work, query-string
+        variants, IDNA/punycode hosts, and lookalike letters outside the small map or from other scripts. Dropping
+        combining marks and the lookalike map can merge sources that differ only by accents or lookalikes, which
+        counts fewer independent sources; spellings that are not folded still count as separate sources.
         """
         text = unicodedata.normalize("NFKC", source_identifier)
         text = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
@@ -300,6 +345,7 @@ class EvidenceService:
         )
         text = " ".join(unicodedata.normalize("NFKC", text).split()).casefold()
         cls = EvidenceService
+        text = text.translate(cls._CONFUSABLES)
         for pattern in (cls._ARXIV_URL, cls._ARXIV_SCHEME):
             match = pattern.match(text)
             if match:
@@ -313,7 +359,7 @@ class EvidenceService:
                 if doi.endswith("/"):
                     doi = doi[:-1]
                 return "doi:" + doi
-        return cls._DOI_PREFIX.sub("doi:", text, count=1)
+        return cls._fold_url(cls._DOI_PREFIX.sub("doi:", text, count=1))
 
     def _calculate_quality_score(self, evidence_data: EvidenceCreate) -> float:
         """

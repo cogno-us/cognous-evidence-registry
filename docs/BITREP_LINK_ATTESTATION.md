@@ -97,3 +97,18 @@ itself still does not check. This does not authorise the link or its content; it
 3. Previously stored links are not altered or re-verified.
 4. `requires-python` is now `>=3.10` (vendored BitRep models use `X | None` annotations).
 5. Epistemic status values change for claims whose evidence shares sources.
+
+### 2026-10-22: wider source-key folding (scan5)
+
+Addendum to #24 (earlier text kept as written). Source keys additionally fold:
+
+- generic `http(s)` URLs: scheme, leading `www.`, default port (80/443), host case, a trailing host dot, `#fragment` and one
+  trailing slash. The query string is kept, so `?id=1` and `?id=2` stay distinct;
+- arXiv: `export.arxiv.org`, `arxiv.org/html/`, and `alphaxiv.org/abs|pdf|overview/` URLs join the existing `arxiv:<id>` key;
+- `hdl.handle.net/10.x/y` is read as the DOI `10.x/y`;
+- free text: a small map of Cyrillic and Greek lookalike letters to Latin (after NFKC and casefold), so "Nature" and a
+  Cyrillic-`а` spelling are one source.
+
+Still not resolved (counted as separate sources): other aliases, mirrors or redirects of one work, a DOI against a publisher
+URL, a bare arXiv number, query-string variants, IDNA/punycode hosts, and lookalikes outside the small map or from other
+scripts. Folding can only merge spellings into fewer sources; it never splits one. Weights and status thresholds are unchanged.
