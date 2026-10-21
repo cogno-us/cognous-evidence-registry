@@ -15,7 +15,7 @@ verified before anything is stored.
 - **Verifier**: the three BitRep modules the contract specifies (`models/verification.py`,
   `utils/trust.py`, `utils/verification.py`) are vendored unchanged except for imports into
   `app/bitrep_verify/`, from cogno-us/bitrep commit
-  `5b5077dafde232a7801cb425c4efddcffb468723` (the same pin used by
+  `981036c315856c71207984797b0c4e48d3b3921d` (the same pin used by
   `chain/python/bitrep_adapter.py`; MIT licence retained in `LICENSE.bitrep`). BitRep is not
   an installable package (top-level `models`/`utils`), so vendoring is the smallest honest
   option. `tests/test_link_attestation.py` checks the vendored code against BitRep's own

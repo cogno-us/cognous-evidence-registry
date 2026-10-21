@@ -16,7 +16,7 @@ permissions:
   contents: read
 jobs:
   cross-component:
-    uses: cogno-us/cognous-stack-qualification/.github/workflows/cognous-evidence-registry--chain-qualification.yml@39f038435afdd71ba162860faa5718d90d7bde64
+    uses: cogno-us/cognous-stack-qualification/.github/workflows/cognous-evidence-registry--chain-qualification.yml@c7534ab427ad59c8f00dfa7929aff3d878d7ddea
     with:
       source_revision: ${{ github.event.pull_request.head.sha || github.sha }}
-      qualification_revision: 39f038435afdd71ba162860faa5718d90d7bde64
+      qualification_revision: c7534ab427ad59c8f00dfa7929aff3d878d7ddea
