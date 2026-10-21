@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-22 — source-key unification and dangling links (scan4 C-1, C-2)
+
+- **Behaviour change, C-1:** `EvidenceService._source_key` folds DOI spellings (`doi:`, `info:doi/`, `urn:doi:`,
+  bare, doi.org/www/dx URLs, case, percent-encoding, trailing slash) and arXiv spellings (`arxiv:`, abs/pdf URLs,
+  version, old-style ids) to one key, so one source in several spellings no longer inflates weight or independence.
+  A DOI against a publisher URL stays un-unified (documented limit). BitRep pin 981036c3 and the vendored verifier are unchanged.
+- **Behaviour change, C-2:** `POST /api/v1/evidence/links` returns 404 for a nonexistent claim, `claim_id_2` or
+  evidence record (after attestation verification; nothing stored). The service method is unchanged.
+
 ## Unreleased — BitRep pin 981036c3
 
 - Pin the BitRep checkout used by `chain/python/bitrep_adapter.py` to 981036c3 (was 5b5077d), so

@@ -71,6 +71,24 @@ one source weigh the same as the best of them. Thresholds (supported above 2.0 s
 and so on) are unchanged for genuinely independent sources. Limit: the normalisation does not
 resolve other aliases of one source (a DOI and a URL of the same paper at a publisher site, say).
 
+### 2026-10-22: DOI and arXiv spellings, and dangling references
+
+Addendum to #24 (the text above is kept as written). Source keys now fold these spellings:
+
+- DOI, case-insensitive and percent-decoded (`%2F` is `/`): `doi:`, `info:doi/`, `urn:doi:`, a bare
+  `10.x/y`, and `doi.org`, `www.doi.org`, `dx.doi.org` URLs with or without scheme, with one trailing
+  slash dropped and, on resolver URLs only, any `?query` or `#fragment` ignored. All become `doi:<doi>`.
+- arXiv: `arxiv:<id>` and `arxiv.org/abs|pdf/<id>` URLs (optional `.pdf`, `www.`, version, trailing slash),
+  new-style and old-style ids. All become `arxiv:<id>`; versions of one paper are one source.
+
+Still not unified (counted as separate sources): a DOI against a publisher URL or landing page, a bare
+arXiv number, `doi:` forms with a `?` or `#` suffix, a DOI with a trailing `.`, and any other alias of one work.
+
+`POST /api/v1/evidence/links` now returns 404 (`claim_not_found` or `evidence_not_found`) when the claim,
+`claim_id_2` or evidence record does not exist, after the attestation check and before anything is stored.
+No supported flow created a link before its claim or evidence existed; `EvidenceService.create_link`
+itself still does not check. This does not authorise the link or its content; it is a legacy-surface check only.
+
 ## Migration
 
 1. Provision issuer keys and a trust snapshot; set `BITREP_TRUST_REGISTRY`.

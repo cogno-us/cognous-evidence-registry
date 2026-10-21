@@ -8,6 +8,7 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, Path, Query, Response
 
+from app.claims import service as claims_module
 from app.core.models import EpistemicStatus, Evidence, EvidenceCreate, Link, LinkCreate
 from app.evidence.link_attestation import AttestationError, verify_link_attestation
 from app.evidence.service import evidence_service
@@ -86,7 +87,7 @@ def create_link(link: LinkCreate, response: Response):
     Raises:
         HTTPException: 401 no attestation; 422 malformed/rejected/mismatched attestation
             (unknown issuer, bad signature, expired, revoked, ...); 409 attestation id
-            reused for a different statement; 503 trust snapshot unavailable
+            reused for a different statement; 404 claim or evidence does not exist; 503 trust snapshot unavailable
     """
     try:
         envelope, result = verify_link_attestation(link)
@@ -107,6 +108,19 @@ def create_link(link: LinkCreate, response: Response):
             )
         response.status_code = 200
         return existing[1]
+    # Links MUST reference existing objects (api/link_layer.py). Checked after the attestation so unsigned
+    # callers still get 401/422 first, and before anything is stored.
+    for claim_id in (link.claim_id, link.claim_id_2):
+        if claim_id is not None and claims_module.claims_service.get_claim(claim_id) is None:
+            raise HTTPException(
+                status_code=404,
+                detail={"reason": "claim_not_found", "message": f"Claim {claim_id} does not exist."},
+            )
+    if link.evidence_id is not None and evidence_service.get_evidence(link.evidence_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"reason": "evidence_not_found", "message": f"Evidence {link.evidence_id} does not exist."},
+        )
     return evidence_service.create_link(
         link,
         attestation_id=st.attestation_id,
