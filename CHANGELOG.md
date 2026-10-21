@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-22 — clean-checkout gate sees nested repos; wider source-key folding (scan5 C-T1-4, C-T2-5)
+
+- **Behaviour change, C-T1-4:** `chain/python/bitrep_checkout.py` no longer relies on `git ls-files --others`, which lists an
+  untracked directory holding its own `.git` as one opaque entry. It walks the tree (symlinks not followed, nested `.git`
+  directories included) and refuses any untracked importable file, untracked symlink or nested git repository. Under
+  `__pycache__` only `*.pyc` is tolerated; any other importable suffix there is refused. `.pyd` is added to the
+  importable suffixes. The BitRep pin is unchanged (the `the_index` pin changes only through the separate refreeze).
+- **Behaviour change, C-T2-5:** `EvidenceService._source_key` also folds generic http(s) URLs (scheme, leading `www.`, default
+  port, host case, trailing host dot, fragment, one trailing slash; query kept), arXiv spellings `export.arxiv.org`,
+  `arxiv.org/html/` and `alphaxiv.org/abs|pdf|overview/`, `hdl.handle.net/10.x/y` as a DOI, and a small map of
+  Cyrillic/Greek lookalike letters. The docstring claim that errors only ever count fewer sources is replaced by a statement of
+  what is and is not folded. Weights and status thresholds are unchanged; other aliases are still not resolved.
+
 ## 2026-10-22 — source-key unification and dangling links (scan4 C-1, C-2)
 
 - **Behaviour change, C-1:** `EvidenceService._source_key` folds DOI spellings (`doi:`, `info:doi/`, `urn:doi:`,
