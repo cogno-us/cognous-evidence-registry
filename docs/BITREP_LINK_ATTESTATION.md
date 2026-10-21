@@ -59,11 +59,17 @@ by the framework (last wins) before verification; what is verified is exactly wh
 
 ## #24 - independence counts distinct sources
 
-`independence_score = min(distinct_sources / 5, 1)` where a source is the evidence
-`source_identifier` (whitespace-collapsed, case-folded), not the evidence id. Five records
-sharing one source now score 0.2 (was 1.0). Weights, robustness and status thresholds are
-unchanged; in particular duplicate links/records still add weight (known limit, not part of
-this change).
+`independence_score = min(distinct_sources / 5, 1)` where a source is the normalised evidence
+`source_identifier`, not the evidence id. Normalisation is NFKC, removal of format (Cf, for
+example zero-width) characters and combining marks, whitespace stripped and collapsed, casefold,
+and the `doi:`, `https://doi.org/` and `http://dx.doi.org/` prefixes reduced to one `doi:` form.
+Five records sharing one source score 0.2 (was 1.0).
+
+`supporting_weight` and `contradicting_weight` also depend on distinct normalised sources: per
+relation, a source contributes the weight of its strongest record once, so five records citing
+one source weigh the same as the best of them. Thresholds (supported above 2.0 supporting weight,
+and so on) are unchanged for genuinely independent sources. Limit: the normalisation does not
+resolve other aliases of one source (a DOI and a URL of the same paper at a publisher site, say).
 
 ## Migration
 

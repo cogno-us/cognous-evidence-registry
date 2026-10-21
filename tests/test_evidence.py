@@ -297,3 +297,59 @@ def test_distinct_evidence_and_opposing_relations_still_count(evidence_service, 
     _link(evidence_service, other.id, RelationType.CONTRADICTS)
     status = evidence_service.compute_epistemic_status("dup_claim")
     assert status.contradicting_weight == other.quality_score * 0.9
+
+
+def _submit_sources(evidence_service, sources):
+    for source in sources:
+        evidence = evidence_service.submit_evidence(
+            EvidenceCreate(
+                type="experiment", source_identifier=source, metadata={}, submitted_by="tester",
+            )
+        )
+        _link(evidence_service, evidence.id, strength=1.0)
+    return evidence_service.compute_epistemic_status("dup_claim")
+
+
+def test_one_record_is_proposed(evidence_service):
+    status = _submit_sources(evidence_service, ["doi:10.1234/x"])
+    assert status.status == ClaimStatus.PROPOSED
+    assert status.supporting_weight == 0.5
+
+
+def test_five_records_of_one_source_are_not_supported(evidence_service):
+    status = _submit_sources(evidence_service, ["doi:10.1234/x"] * 5)
+    assert status.status == ClaimStatus.PROPOSED
+    assert status.supporting_weight == 0.5
+    assert status.independence_score == 0.2
+
+
+def test_five_spellings_of_one_doi_are_not_supported(evidence_service):
+    spellings = [
+        "doi:10.1234/x",
+        "https://doi.org/10.1234/x",
+        "DOI:10.1234/X​",
+        "doi:10.1234/x ",
+        "http://dx.doi.org/10.1234/x́",
+        "ｄｏｉ:10.1234/x",
+    ]
+    status = _submit_sources(evidence_service, spellings)
+    assert status.status == ClaimStatus.PROPOSED
+    assert status.supporting_weight == 0.5
+    assert status.independence_score == 0.2
+
+
+def test_five_distinct_sources_keep_the_documented_result(evidence_service):
+    status = _submit_sources(evidence_service, [f"doi:10.1234/distinct_{i}" for i in range(5)])
+    assert status.status == ClaimStatus.SUPPORTED
+    assert status.supporting_weight == 2.5
+    assert status.independence_score == 1.0
+
+
+def test_one_source_may_support_and_contradict(evidence_service):
+    evidence = evidence_service.submit_evidence(
+        EvidenceCreate(type="experiment", source_identifier="doi:10.1/s", metadata={}, submitted_by="t")
+    )
+    _link(evidence_service, evidence.id, RelationType.SUPPORTS, strength=1.0)
+    _link(evidence_service, evidence.id, RelationType.CONTRADICTS, strength=1.0)
+    status = evidence_service.compute_epistemic_status("dup_claim")
+    assert status.supporting_weight == 0.5 and status.contradicting_weight == 0.5
