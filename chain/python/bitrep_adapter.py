@@ -6,24 +6,33 @@ The caller is an independent verifier, NOT an on-chain proof producer.
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
-import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 PIN = "981036c315856c71207984797b0c4e48d3b3921d"
 
 
+def _checkout_module():
+    """Load the sibling checkout verifier by path (the adapter may be imported without its directory on sys.path)."""
+    spec = importlib.util.spec_from_file_location("bitrep_checkout", Path(__file__).resolve().with_name("bitrep_checkout.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def load_bitrep():
     root = Path(os.environ["BITREP_ROOT"]).resolve()
-    head = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
-    dirty = subprocess.check_output(
-        ["git", "-C", str(root), "status", "--porcelain", "--untracked-files=normal"], text=True
-    ).strip()
-    if head != PIN or dirty:
-        raise ValueError("BitRep checkout must be clean and pinned")
+    problems = _checkout_module().checkout_problems(root, PIN)
+    if problems:
+        raise ValueError("BitRep checkout must be clean and pinned: " + "; ".join(problems[:5]))
+    # Bytecode inside the checkout is never read or written: a private empty prefix replaces its __pycache__.
+    sys.dont_write_bytecode = True
+    sys.pycache_prefix = tempfile.mkdtemp(prefix="bitrep-pycache-")
     sys.path.insert(0, str(root))
     from models.verification import AttestationEnvelope
     from utils.trust import TrustRegistry, strict_json
