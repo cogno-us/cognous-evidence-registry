@@ -71,13 +71,13 @@ is_valid = signature_verifier.verify_signature(public_key, signature, data.encod
 **Status**: 🟡 Partial — type validation only
 
 **Implementation**:
-- Pydantic models for all API inputs (type checking; most text and list fields have no length or count bounds, and request size is not limited)
+- Pydantic models for the legacy API request bodies (type checking only; no text, list or mapping field declares a length, count or pattern bound, and request size is not limited)
 - Type checking and validation at the API boundary
 - No input sanitization: string values are stored and returned as submitted (no HTML/script escaping or content filtering)
 
 **What this provides**:
 - Malformed request bodies (invalid JSON, missing required fields, wrong field types, invalid enum values) are rejected by Pydantic with HTTP 422
-- Numeric bounds where declared (for example `ge`/`le` on scores and link strength, finite non-negative vote reputation)
+- The only declared value constraints are numeric: `ge=0`/`le=1` on `quality_score`, link `strength`, `independence_score` and `robustness_score`, and a non-negative, finite `reputation` on votes (`allow_inf_nan=False`). Nothing else is range-checked
 
 **What this does not provide**:
 - No SQL injection surface exists because the legacy API has no database or SQL; this is an absence of SQL, not a protection, and any future database code needs its own parameterized queries
@@ -85,7 +85,7 @@ is_valid = signature_verifier.verify_signature(public_key, signature, data.encod
 - No size or count limits on request bodies, strings or lists
 - Free-form fields such as `semantic_representation` (`Dict[str, Any]`) accept arbitrary JSON values without type checking
 
-**Example** (illustrative target shape; the current `app/core/models.py` does not apply these bounds):
+**Example** (an illustrative target shape only; neither `app/core/models.py` nor any other code applies these bounds, and the snippet uses `regex` and `max_items`, which Pydantic 2 renamed):
 ```python
 class ClaimCreate(BaseModel):
     canonical_text: str = Field(..., min_length=1, max_length=10000)
@@ -98,7 +98,8 @@ class ClaimCreate(BaseModel):
 **Status**: 🟡 Placeholder Implementation
 
 **Current Implementation**:
-- Placeholder ZK proof generation and verification
+- Placeholder ZK proof generation only: `generate_proof` returns a string derived from Python's per-process `hash()`, which is not a proof. `verify_proof` always returns `False` (fail closed), so no placeholder string is ever accepted as valid
+- Nothing in the application imports `app/core/security.py`; the module is an unused helper
 - Framework for future integration with ZK libraries (zk-SNARKs, zk-STARKs)
 
 **Code Location**: `app/core/security.py::ZKProofPlaceholder`
@@ -186,7 +187,7 @@ Claim → Evidence → Link → Attestation → Signature → Verification
 
 ### For Developers
 
-1. **Always Validate Input**: Use Pydantic models for all user input
+1. **Always Validate Input**: Use Pydantic models for all user input and declare length, count and pattern bounds explicitly; the legacy API declares none
 2. **Avoid SQL Injection**: Use parameterized queries (when database is added)
 3. **Secure Secret Keys**: Never commit secrets to version control
 4. **Use HTTPS**: Always use TLS in production
@@ -282,7 +283,7 @@ We recognize security researchers who responsibly disclose vulnerabilities:
 ## Security Roadmap
 
 ### Phase 1: Foundation (Current)
-- [x] Input validation with Pydantic
+- [x] Type validation with Pydantic (no length, count or pattern bounds)
 - [x] Cryptographic signature framework
 - [x] Placeholder ZK proofs
 - [x] Basic security documentation
