@@ -34,6 +34,6 @@ receipt. The fixture driver is test-only and is not the production CLI.
 - `client.mjs`: exact-byte commitments and deployment-scoped identifiers.
 - `reconstruct.mjs`: separate read-only log reconstruction and provisional-depth handling.
 - `python/bitrep_adapter.py`: binding checks using upstream verification, no copied crypto.
-- `python/bitrep_checkout.py`: before anything is imported, compares every tracked BitRep file with the pinned commit's blobs, refuses skip-worktree/assume-unchanged index flags and refuses untracked or ignored importable files (a clean `git status` is not trusted). Bytecode under `__pycache__` is not read.
+- `python/bitrep_checkout.py`: before anything is imported, compares every tracked BitRep file with the pinned commit's blobs, refuses skip-worktree/assume-unchanged index flags and refuses untracked or ignored importable files (a clean `git status` is not trusted). Bytecode under `__pycache__` is not read. The adapter imports BitRep only from a private copy materialised from the pinned commit's Git objects (`materialize_pinned`); the checkout itself is never on `sys.path`, and no git filter, hook, attribute or repo-local config is executed.
 - Synthetic test drivers: maintained in the qualification repository linked above.
 - `VALIDATION.md`: actual results, environment, measurements and untested cases.

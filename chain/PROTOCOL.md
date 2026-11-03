@@ -167,7 +167,7 @@ Pinned repository: `cogno-us/cognous-evidence-attestation`, commit
 `utils/verification.py`, `utils/trust.py`, `tests/fixtures/verification-v1.json`.
 No BitRep source or signature scheme is changed or copied into The Index.
 
-`python/bitrep_adapter.py` loads a clean pinned checkout in a separate process,
+`python/bitrep_adapter.py` imports BitRep in a separate process from a detached copy of the pinned commit's Git objects,
 uses upstream strict parsing/canonicalization/Ed25519 verification, recomputes the
 exact content commitment and statement digest, and compares expected subject, type
 and audience against independent chain/policy inputs. It authenticates the snapshot

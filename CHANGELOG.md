@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-03 - R1-B: BitRep source verification hardened; BitRep is imported from a detached authenticated copy (csf_612ced4ef93a62df3d54b797, csf_db3f244ab2fd16c3a657eb5d)
+
+- **Behaviour change (security):** `chain/python/bitrep_checkout.py` no longer re-hashes differing files through git filters. The
+  `hash-object --stdin-paths` call (which ran repository-configured clean filters and accepted the filtered hash) is gone; blob ids are
+  computed in-process from raw on-disk bytes. A CRLF-mutated or otherwise edited tracked file is refused, never normalised.
+- Every git subprocess uses a scrubbed environment (`GIT_CONFIG_NOSYSTEM`, global/system config -> null device, no replace objects, no
+  inherited `GIT_*`) and `-c core.fsmonitor=false core.hooksPath=/dev/null core.attributesFile=/dev/null`; only filter-free plumbing is used.
+- New `materialize_pinned(root, pin, dest=None)` copies the pinned commit's blobs from the object database (`cat-file --batch`, each blob
+  re-hashed) into a private read-only directory. `bitrep_adapter.load_bitrep()` now puts only that copy on `sys.path` (and checks the
+  imported modules live inside it), so untracked or shadowing files, later edits to the checkout and lazy imports cannot change executed
+  bytes. `BITREP_ROOT` is only a source of Git objects; the adapter no longer requires the worktree to be clean (it never executes it).
+  `checkout_problems(root, pin)` keeps its signature and meaning. BitRep envelope and attestation digest semantics, the pin, and the CLI are
+  unchanged. Evidence Registry/BitRep remains excluded from private-preview claims.
+- Tests: tests/test_r1b_source_verification.py.
+
 ## 2026-10-22 — source-key: host normalised before DOI/arXiv matching, reserved encodings and DOI suffixes kept distinct (wave 7, T2-D, T2-E)
 
 - **Behaviour change, T2-D (same source, distinct keys):** `EvidenceService._source_key` normalises the URL host before the DOI and
