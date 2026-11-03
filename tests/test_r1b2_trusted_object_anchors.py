@@ -323,16 +323,16 @@ def test_environment_object_redirection_is_ignored(good, tmp_path, monkeypatch):
         unlock(dest)
 
 
-def test_alternate_supplying_the_genuine_objects_is_only_a_byte_source(good, tmp_path):
+def test_alternate_supplying_the_genuine_objects_is_not_followed(good, tmp_path):
+    """R1-B3 adaptation: R1-B2 accepted genuine bytes served through ``objects/info/alternates`` (git followed it). The
+    trusted reader no longer follows alternates at all (an alternate is repository-controlled redirection), so the same
+    setup is refused deterministically; the genuine objects must live in the checkout's own object directory."""
     root, pin, anchors = good
     victim = stripped_clone(root, tmp_path / "victim")
     (victim / ".git" / "objects" / "info").mkdir(parents=True, exist_ok=True)
     (victim / ".git" / "objects" / "info" / "alternates").write_text(str(root / ".git" / "objects") + "\n")
-    dest = materialize(victim, pin, anchors, tmp_path / "copy")
-    try:
-        assert (dest / "utils" / "verification.py").read_text() == STUBS["utils/verification.py"]
-    finally:
-        unlock(dest)
+    with pytest.raises(ValueError, match="missing or not authentic"):
+        materialize(victim, pin, anchors, tmp_path / "copy")
 
 
 # 6: malicious local refs / tags ----------------------------------------------------------------------------------------

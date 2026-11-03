@@ -74,7 +74,7 @@ def stub_bitrep(tmp_path):
     return root, git(root, "rev-parse", "HEAD").strip()
 
 
-def run_adapter(root: Path, pin: str, body: str, tmp_path: Path, env_extra: dict | None = None):
+def run_adapter(root: Path, pin: str, body: str, tmp_path: Path, env_extra: dict | None = None, preamble: str = ""):
     """Run a copy of the real adapter (only PIN substituted) in a fresh interpreter; ``body`` runs after the import."""
     work = tmp_path / "adapter_copy"
     work.mkdir(exist_ok=True)
@@ -84,7 +84,7 @@ def run_adapter(root: Path, pin: str, body: str, tmp_path: Path, env_extra: dict
     (work / "bitrep_adapter.py").write_text(source.replace(prod, f'PIN = "{pin}"'), encoding="utf-8")
     (work / "bitrep_checkout.py").write_text(MODULE.read_text(encoding="utf-8"), encoding="utf-8")
     (work / "bitrep_trusted_objects.py").write_text(anchors_module_text(root, pin), encoding="utf-8")
-    (work / "runner.py").write_text(f"import sys\nsys.path.insert(0, {str(work)!r})\nimport bitrep_adapter as a\n" + textwrap.dedent(body), encoding="utf-8")
+    (work / "runner.py").write_text(f"import sys\nsys.path.insert(0, {str(work)!r})\n" + textwrap.dedent(preamble) + "import bitrep_adapter as a\n" + textwrap.dedent(body), encoding="utf-8")
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     env.update(BITREP_ROOT=str(root), PYTHONPATH="", **(env_extra or {}))
     return subprocess.run([sys.executable, "-I", str(work / "runner.py")], cwd=work, env=env, text=True,
