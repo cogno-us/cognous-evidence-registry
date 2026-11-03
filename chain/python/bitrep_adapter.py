@@ -9,6 +9,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -26,18 +27,29 @@ def _checkout_module():
 
 
 def load_bitrep():
+    """Import BitRep from a detached copy of the pinned commit's Git objects, never from the mutable checkout.
+
+    ``BITREP_ROOT`` is only a source of Git objects. The authenticated bytes are materialised into a private read-only
+    directory and that directory alone goes on ``sys.path``, so untracked or shadowing files, CRLF or other worktree
+    edits, filters, and changes made after this call cannot alter what executes.
+    """
     root = Path(os.environ["BITREP_ROOT"]).resolve()
-    problems = _checkout_module().checkout_problems(root, PIN)
-    if problems:
-        raise ValueError("BitRep checkout must be clean and pinned: " + "; ".join(problems[:5]))
-    # Bytecode inside the checkout is never read or written: a private empty prefix replaces its __pycache__.
+    checkout = _checkout_module()
+    try:
+        detached = checkout.materialize_pinned(root, PIN)
+    except (ValueError, OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError("BitRep pinned source cannot be authenticated: " + str(exc)) from exc
+    # Bytecode is never read or written: a private empty prefix replaces every __pycache__.
     sys.dont_write_bytecode = True
     sys.pycache_prefix = tempfile.mkdtemp(prefix="bitrep-pycache-")
-    sys.path.insert(0, str(root))
+    sys.path.insert(0, str(detached))
     from models.verification import AttestationEnvelope
     from utils.trust import TrustRegistry, strict_json
     from utils.verification import statement_digest, verify_attestation
 
+    for module in (sys.modules["models.verification"], sys.modules["utils.trust"], sys.modules["utils.verification"]):
+        if not Path(module.__file__).resolve().is_relative_to(detached):
+            raise ValueError("BitRep module resolved outside the detached authenticated copy: " + module.__name__)
     return AttestationEnvelope, TrustRegistry, strict_json, statement_digest, verify_attestation
 
 
