@@ -17,6 +17,12 @@ therefore checked directly:
    files under ``__pycache__`` are tolerated: the adapter points ``sys.pycache_prefix`` at an empty private directory
    before importing, so bytecode inside the checkout is never read. Any other importable suffix there is refused.
 
+The checkout's own object database is never asked what the pinned commit or tree *is*: ``TrustedObjects`` (committed in
+``bitrep_trusted_objects.py``) carry the expected commit id, root tree id and per-path blob ids, and every object read
+is re-hashed in-process against an id that comes from those anchors or from an already verified parent object. Refs,
+tags, HEAD, replace objects, alternates, grafts and shallow files never take part. The anchors are source-authentication
+anchors, not operational authority.
+
 Verifying a checkout is not enough to import from it (the working tree can change between check and import, and lazy
 imports read the live directory), so ``materialize_pinned`` copies the authenticated blobs out of the Git object database
 into a private directory and the adapter imports only that copy. The mutable checkout is never put on ``sys.path``.
@@ -41,6 +47,7 @@ import stat
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import NamedTuple
 
 _IMPORTABLE_SUFFIXES = (*importlib.machinery.all_suffixes(), ".pyw", ".pyd")
 
@@ -198,50 +205,142 @@ def _safe_relative(rel: str) -> bool:
     )
 
 
-def materialize_pinned(root: Path, pin: str, dest: Path | None = None) -> Path:
-    """Copy the files of commit ``pin`` out of ``root``'s object database into a private directory and return it.
+class TrustedObjects(NamedTuple):
+    """Expected Git object identities, supplied by trusted code (``bitrep_trusted_objects.py``), never by a checkout.
 
-    Only Git objects are read (``cat-file --batch``, never the working tree, index or any filter), and every blob is
-    re-hashed here against the id recorded in the pinned tree, so the returned directory holds exactly the authenticated
-    bytes. The directory is private (0700), made read-only, and removed at interpreter exit. Untracked files, index
-    flags, ``.gitattributes`` and the state of the checkout are irrelevant to it. Raises ``ValueError`` on anything that
-    cannot be reproduced exactly (non-commit pin, submodule, unsafe path, case-colliding names, escaping symlink).
+    ``commit`` and ``tree`` are the pinned commit and root tree ids; ``files`` is the complete expected manifest of
+    ``(mode, path, blob id)`` entries of that tree. They are source-authentication anchors only.
+    """
+
+    commit: str
+    tree: str
+    files: tuple[tuple[str, str, str], ...]
+
+
+def _object_hash(kind: bytes, payload: bytes, width: int) -> str:
+    algorithm = hashlib.sha256 if width == 64 else hashlib.sha1
+    return algorithm(kind + b" %d\0" % len(payload) + payload).hexdigest()
+
+
+def _read_objects(root: Path, kind: str, ids: list[str]) -> dict[str, bytes]:
+    """Read raw objects by full id and verify each in-process against the id that was asked for.
+
+    The object database (or an alternate, replace ref or ``GIT_*`` redirection it may carry) only supplies bytes: an
+    object is accepted solely when ``"<kind> <len>\\0" + bytes`` hashes to exactly the id requested here, and the id
+    always comes from trusted anchors or from an already verified parent object.
+    """
+    ids = sorted(set(ids))
+    for oid in ids:
+        if not _OBJECT_ID.match(oid):
+            raise ValueError(f"not a full lowercase object id: {oid!r}")
+    out: dict[str, bytes] = {}
+    if not ids:
+        return out
+    stream = _git_bytes(root, "cat-file", "--batch", input=("\n".join(ids) + "\n").encode())
+    pos = 0
+    for oid in ids:
+        end = stream.index(b"\n", pos)
+        header = stream[pos:end].split()
+        if len(header) != 3 or header[0].decode() != oid or header[1].decode() != kind:
+            raise ValueError(f"object missing or not a {kind}: {oid}")
+        size = int(header[2])
+        payload = stream[end + 1:end + 1 + size]
+        if len(payload) != size or _object_hash(kind.encode(), payload, len(oid)) != oid:
+            raise ValueError(f"object bytes do not match their id: {oid}")
+        out[oid] = payload
+        pos = end + 1 + size + 1
+    return out
+
+
+def verify_commit(root: Path, commit: str) -> str:
+    """Hash the raw commit object against ``commit`` and return the root tree id it names (verified, not resolved)."""
+    payload = _read_objects(root, "commit", [commit])[commit]
+    first = payload.split(b"\n", 1)[0].decode("ascii", "replace")
+    parts = first.split(" ")
+    if len(parts) != 2 or parts[0] != "tree" or not _OBJECT_ID.match(parts[1]) or len(parts[1]) != len(commit):
+        raise ValueError("commit object does not start with a tree line")
+    return parts[1]
+
+
+def verified_tree_entries(root: Path, tree: str) -> list[tuple[str, str, str]]:
+    """Recompute every tree object hash in-process from ``tree`` down and return flat ``(mode, path, blob)`` entries."""
+    width = len(tree)
+    flat: list[tuple[str, str, str]] = []
+    pending: list[tuple[str, str]] = [("", tree)]
+    seen: set[str] = set()
+    while pending:
+        level = pending
+        pending = []
+        raw = _read_objects(root, "tree", [oid for _, oid in level])
+        for prefix, oid in level:
+            seen.add(oid)
+            if len(seen) > 10000:
+                raise ValueError("tree is too large")
+            data, pos = raw[oid], 0
+            while pos < len(data):
+                sp = data.index(b" ", pos)
+                nul = data.index(b"\0", sp)
+                mode, name = data[pos:sp].decode("ascii"), os.fsdecode(data[sp + 1:nul])
+                child = data[nul + 1:nul + 1 + width // 2].hex()
+                if len(child) != width:
+                    raise ValueError("truncated tree entry")
+                pos = nul + 1 + width // 2
+                rel = prefix + name
+                if not name or "/" in name:
+                    raise ValueError(f"unsafe tree entry name: {rel!r}")
+                if mode == "40000":
+                    pending.append((rel + "/", child))
+                elif mode in ("100644", "100755", "120000"):
+                    flat.append((mode, rel, child))
+                else:
+                    raise ValueError(f"cannot materialize pinned entry: {rel!r} (mode {mode})")
+    return sorted(flat, key=lambda e: e[1])
+
+
+def verify_anchored(root: Path, anchors: TrustedObjects) -> tuple[list[tuple[str, str, str]], dict[str, bytes]]:
+    """Authenticate commit, tree, manifest and every blob against ``anchors``; return entries and blob bytes.
+
+    Order: raw commit hash == anchors.commit; the commit's tree line == anchors.tree; every tree object re-hashed from
+    anchors.tree down; the resulting (mode, path, blob) set == anchors.files exactly; each blob re-hashed against its
+    manifest id. Refs, tags, HEAD, replace objects, alternates, grafts and shallow files never take part.
     """
     root = Path(root).resolve()
-    if not _OBJECT_ID.match(pin):
-        raise ValueError("pin must be a full lowercase object id")
-    if _git(root, "cat-file", "-t", pin).strip() != "commit":
-        raise ValueError("pin is not a commit")
-    entries: list[tuple[str, str, str, str]] = []
-    for entry in _git(root, "ls-tree", "-r", "-z", "--full-tree", pin).split("\0"):
-        if entry:
-            meta, rel = entry.split("\t", 1)
-            mode, kind, blob = meta.split()
-            entries.append((mode, kind, blob, rel))
+    for oid in (anchors.commit, anchors.tree):
+        if not _OBJECT_ID.match(oid):
+            raise ValueError("trusted anchors must be full lowercase object ids")
+    if verify_commit(root, anchors.commit) != anchors.tree:
+        raise ValueError("commit does not name the trusted tree")
+    entries = verified_tree_entries(root, anchors.tree)
+    if entries != sorted(anchors.files, key=lambda e: e[1]) or len(set(e[1] for e in entries)) != len(entries):
+        raise ValueError("tree contents differ from the trusted manifest")
+    blobs = _read_objects(root, "blob", [blob for _, _, blob in entries])
+    return entries, blobs
+
+
+def materialize_pinned(root: Path, pin: str, dest: Path | None = None, *, anchors: TrustedObjects) -> Path:
+    """Copy the files of the anchored commit out of ``root``'s object database into a private directory.
+
+    ``anchors`` (trusted code, not the checkout) define the expected commit, tree and per-path blob ids; ``root`` only
+    supplies bytes, each verified by in-process hashing (see ``verify_anchored``). ``pin`` must equal ``anchors.commit``.
+    Only Git objects named by those ids are read (``cat-file --batch``, never the working tree, index, refs or any
+    filter). The directory is private (0700), made read-only, and removed at interpreter exit. Raises ``ValueError`` on
+    anything that cannot be reproduced exactly (identity mismatch, submodule, unsafe path, case-colliding names,
+    escaping symlink).
+    """
+    root = Path(root).resolve()
+    if pin != anchors.commit:
+        raise ValueError("pin is not the trusted anchor commit")
+    verified, data_by_blob = verify_anchored(root, anchors)
+    entries = [(mode, "blob", blob, rel) for mode, rel, blob in verified]
     seen: set[str] = set()
     for mode, kind, blob, rel in entries:
-        if kind != "blob" or mode not in ("100644", "100755", "120000") or not _safe_relative(rel):
+        if not _safe_relative(rel):
             raise ValueError(f"cannot materialize pinned entry: {rel!r}")
         folded = rel.casefold()
         if folded in seen:
             raise ValueError(f"case-colliding pinned path: {rel!r}")
         seen.add(folded)
-    blobs = sorted({blob for _, _, blob, _ in entries})
-    data: dict[str, bytes] = {}
-    if blobs:
-        stream = _git_bytes(root, "cat-file", "--batch", input=("\n".join(blobs) + "\n").encode())
-        pos = 0
-        for blob in blobs:
-            end = stream.index(b"\n", pos)
-            header = stream[pos:end].split()
-            if len(header) != 3 or header[0].decode() != blob or header[1] != b"blob":
-                raise ValueError(f"object missing or not a blob: {blob}")
-            size = int(header[2])
-            payload = stream[end + 1:end + 1 + size]
-            if len(payload) != size or _blob_digest(payload, len(blob)) != blob:
-                raise ValueError(f"object bytes do not match their id: {blob}")
-            data[blob] = payload
-            pos = end + 1 + size + 1
+    data = data_by_blob
     out = Path(dest) if dest is not None else Path(tempfile.mkdtemp(prefix="bitrep-pinned-"))
     out.mkdir(mode=0o700, exist_ok=True)
     out = out.resolve()
