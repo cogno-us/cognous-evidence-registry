@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-11-03 - R1-B2: BitRep commit, tree and blob identities are independent trusted anchors (csf_2549122f435d297f245f3c12)
+
+- **Behaviour change (security):** `materialize_pinned(root, pin, dest=None, *, anchors)` no longer asks the checkout's object database what the
+  pinned commit or tree is. `anchors` (`TrustedObjects`) come from committed trusted code, `chain/python/bitrep_trusted_objects.py`: the commit
+  id `981036c315856c71207984797b0c4e48d3b3921d`, its root tree id `96d9a687597c8a5e63c55a52c92fbfef35b791ba` and the full manifest of the
+  71 `(mode, path, blob id)` entries of that tree. The loader hashes the raw commit object (`commit <len>\0` + bytes) in-process and compares it
+  to the pinned commit id, checks its `tree` line, re-hashes every tree object from the root down (`tree <len>\0` + bytes), requires the
+  resulting entry set to equal the manifest exactly (paths, modes, blob ids), and re-hashes every blob against the manifest. The object database,
+  alternates, replace refs, refs, tags, HEAD, grafts and shallow files may only supply bytes; they never define an expected id. A symbolic or
+  abbreviated pin, or a pin different from `anchors.commit`, is refused. Scrubbed environment, no filters and detached materialization are
+  unchanged; BitRep envelope and attestation digest semantics, CRLF policy (exact bytes), the CLI and the `PIN` constant are unchanged.
+- The anchors are **source-authentication anchors, not operational authority**: they identify which exact BitRep bytes may be imported and
+  grant nothing (no trust registry, no signing or acceptance authority).
+- Reproducible derivation: `python chain/python/derive_bitrep_trusted_objects.py <known-good clone> <commit> --write` (a test regenerates
+  and compares when a clone is available, `BITREP_KNOWN_GOOD`).
+- **How to update the BitRep pin:** (1) obtain the new commit from a clone you trust; (2) run the derivation tool with the new commit id and
+  review the diff of `bitrep_trusted_objects.py`; (3) change `PIN` in `chain/python/bitrep_adapter.py` to the same commit (the adapter refuses if
+  `PIN != bitrep_trusted_objects.COMMIT`); (4) update `PRODUCTION_PIN` in `tests/test_bitrep_checkout.py` and the pinned tree/file-count
+  assertions in `tests/test_r1b2_trusted_object_anchors.py`. All four change in one commit.
+- `checkout_problems` (the worktree audit) is unchanged and still resolves `HEAD` through git; the adapter no longer relies on it for authenticity.
+- Note: on git 2.43 git itself re-hashes trees and commits when parsing them, so forged tree/commit objects in a pack are already stopped by
+  git; this change removes dependence on that behaviour and on any git version, config or object-format feature.
+
 ## 2026-11-03 - R1-B: BitRep source verification hardened; BitRep is imported from a detached authenticated copy (csf_612ced4ef93a62df3d54b797, csf_db3f244ab2fd16c3a657eb5d)
 
 - **Behaviour change (security):** `chain/python/bitrep_checkout.py` no longer re-hashes differing files through git filters. The

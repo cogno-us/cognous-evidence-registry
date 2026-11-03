@@ -26,17 +26,28 @@ def _checkout_module():
     return module
 
 
+def _trusted_objects(checkout):
+    """Trusted commit/tree/blob anchors committed beside this file; they never come from the BITREP_ROOT checkout."""
+    spec = importlib.util.spec_from_file_location("bitrep_trusted_objects", Path(__file__).resolve().with_name("bitrep_trusted_objects.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if module.COMMIT != PIN:
+        raise ValueError("trusted object anchors do not belong to PIN")
+    return checkout.TrustedObjects(module.COMMIT, module.TREE, tuple(module.FILES))
+
+
 def load_bitrep():
     """Import BitRep from a detached copy of the pinned commit's Git objects, never from the mutable checkout.
 
-    ``BITREP_ROOT`` is only a source of Git objects. The authenticated bytes are materialised into a private read-only
+    ``BITREP_ROOT`` is only a source of Git object bytes: the expected commit, tree and per-file blob ids are the trusted
+    anchors in ``bitrep_trusted_objects.py`` and every object is re-hashed in-process against them. The authenticated bytes are materialised into a private read-only
     directory and that directory alone goes on ``sys.path``, so untracked or shadowing files, CRLF or other worktree
     edits, filters, and changes made after this call cannot alter what executes.
     """
     root = Path(os.environ["BITREP_ROOT"]).resolve()
     checkout = _checkout_module()
     try:
-        detached = checkout.materialize_pinned(root, PIN)
+        detached = checkout.materialize_pinned(root, PIN, anchors=_trusted_objects(checkout))
     except (ValueError, OSError, subprocess.CalledProcessError) as exc:
         raise ValueError("BitRep pinned source cannot be authenticated: " + str(exc)) from exc
     # Bytecode is never read or written: a private empty prefix replaces every __pycache__.

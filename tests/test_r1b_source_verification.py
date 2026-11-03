@@ -17,6 +17,21 @@ import pytest
 from test_bitrep_checkout import MODULE, checkout, fake_bitrep, git, problems  # noqa: F401  (fixture reused)
 
 ADAPTER = MODULE.with_name("bitrep_adapter.py")
+
+
+def anchors_for(root: Path, pin: str):
+    """Trusted anchors for a throwaway stand-in repository, derived by the same tool used for the real pin (R1-B2)."""
+    tree = checkout.verify_commit(root, pin)
+    return checkout.TrustedObjects(pin, tree, tuple(checkout.verified_tree_entries(root, tree)))
+
+
+def anchors_module_text(root: Path, pin: str) -> str:
+    try:
+        a = anchors_for(root, pin)
+    except Exception:  # unknown pin: anchors that cannot match anything
+        return f'COMMIT = "{pin}"\nTREE = "{"0" * 40}"\nFILES = ()\n'
+    return f'COMMIT = "{a.commit}"\nTREE = "{a.tree}"\nFILES = {a.files!r}\n'
+
 VERIFY_V1 = "def verify(sig):\n    return sig == b'valid'\n"
 
 STUBS = {
@@ -68,6 +83,7 @@ def run_adapter(root: Path, pin: str, body: str, tmp_path: Path, env_extra: dict
     assert prod in source
     (work / "bitrep_adapter.py").write_text(source.replace(prod, f'PIN = "{pin}"'), encoding="utf-8")
     (work / "bitrep_checkout.py").write_text(MODULE.read_text(encoding="utf-8"), encoding="utf-8")
+    (work / "bitrep_trusted_objects.py").write_text(anchors_module_text(root, pin), encoding="utf-8")
     (work / "runner.py").write_text(f"import sys\nsys.path.insert(0, {str(work)!r})\nimport bitrep_adapter as a\n" + textwrap.dedent(body), encoding="utf-8")
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     env.update(BITREP_ROOT=str(root), PYTHONPATH="", **(env_extra or {}))
@@ -170,7 +186,7 @@ def test_every_git_invocation_is_hardened(monkeypatch, fake_bitrep):
     monkeypatch.setattr(checkout.subprocess, "run", spy)
     monkeypatch.setenv("GIT_DIR", "/nonexistent")
     checkout.checkout_problems(root, pin)
-    checkout.materialize_pinned(root, pin)
+    checkout.materialize_pinned(root, pin, anchors=anchors_for(root, pin))
     assert calls
     for cmd, env in calls:
         assert "--no-replace-objects" in cmd and "core.fsmonitor=false" in cmd
@@ -232,7 +248,7 @@ def test_mutation_after_verification_does_not_change_executed_bytes(stub_bitrep,
 def test_materialized_copy_equals_pinned_objects_byte_for_byte(stub_bitrep, tmp_path):
     root, pin = stub_bitrep
     (root / "models" / "lazy_mod.py").write_bytes(b"VALUE = 'x'\r\n")  # worktree differs; irrelevant to the copy
-    dest = checkout.materialize_pinned(root, pin, dest=tmp_path / "copy")
+    dest = checkout.materialize_pinned(root, pin, dest=tmp_path / "copy", anchors=anchors_for(root, pin))
     try:
         for rel, text in STUBS.items():
             assert (dest / rel).read_bytes() == text.encode()
@@ -250,7 +266,7 @@ def test_materialize_ignores_filters_and_marker_is_not_created(stub_bitrep, tmp_
     marker = tmp_path / "MARKER"
     monkeypatch.setenv("FILTER_OUT", "EVIL")
     install_marker_filter(root, marker, via="gitattributes")
-    dest = checkout.materialize_pinned(root, pin, dest=tmp_path / "copy")
+    dest = checkout.materialize_pinned(root, pin, dest=tmp_path / "copy", anchors=anchors_for(root, pin))
     assert (dest / "models" / "lazy_mod.py").read_text() == STUBS["models/lazy_mod.py"]
     assert not marker.exists()
 
@@ -258,17 +274,17 @@ def test_materialize_ignores_filters_and_marker_is_not_created(stub_bitrep, tmp_
 def test_materialize_refuses_non_commit_and_replaced_objects(stub_bitrep, tmp_path):
     root, pin = stub_bitrep
     with pytest.raises(ValueError):
-        checkout.materialize_pinned(root, "HEAD", dest=tmp_path / "a")
+        checkout.materialize_pinned(root, "HEAD", dest=tmp_path / "a", anchors=anchors_for(root, pin))
     tree = git(root, "rev-parse", f"{pin}^{{tree}}").strip()
     with pytest.raises(ValueError):
-        checkout.materialize_pinned(root, tree, dest=tmp_path / "b")
+        checkout.materialize_pinned(root, tree, dest=tmp_path / "b", anchors=anchors_for(root, pin))
     # replace ref pointing the pinned lazy_mod blob at different content must not redirect the copy
     evil = subprocess.run(["git", "-C", str(root), "hash-object", "-w", "--stdin"], input="VALUE = 'replaced'\n",
                           text=True, capture_output=True, check=True,
                           env={**os.environ, "GIT_CONFIG_GLOBAL": os.devnull}).stdout.strip()
     good = git(root, "rev-parse", f"{pin}:models/lazy_mod.py").strip()
     git(root, "replace", good, evil)
-    dest = checkout.materialize_pinned(root, pin, dest=tmp_path / "c")
+    dest = checkout.materialize_pinned(root, pin, dest=tmp_path / "c", anchors=anchors_for(root, pin))
     assert (dest / "models" / "lazy_mod.py").read_text() == STUBS["models/lazy_mod.py"]
 
 
@@ -290,7 +306,7 @@ def test_crlf_mutated_checkout_executes_only_the_lf_pinned_bytes_from_the_detach
     assert done.returncode == 0, done.stderr
     assert "OUT pinned" in done.stdout
     # the detached bytes are LF: the interpreter would have reported a SyntaxError-free but different file otherwise
-    copy = checkout.materialize_pinned(root, pin, dest=tmp_path / "crlfcopy")
+    copy = checkout.materialize_pinned(root, pin, dest=tmp_path / "crlfcopy", anchors=anchors_for(root, pin))
     assert (copy / "models" / "lazy_mod.py").read_bytes() == b"VALUE = 'pinned'\n"
 
 
