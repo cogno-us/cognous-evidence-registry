@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-11-03 - R1-B3: the trusted BitRep object read starts no git process and is bounded (csf_518b8599e95b7919b55fe371, csf_d7e271587bb3dc0dec7ac96f)
+
+- **Behaviour change (security):** `materialize_pinned` / `verify_anchored` / `verify_commit` / `verified_tree_entries` no longer run
+  `git cat-file --batch`. A repository-local `.git/config` could declare a partial clone / promisor remote (for example
+  `remote.X.promisor=true`, `extensions.partialClone`, a `ext::` URL and `protocol.ext.allow=always`); git then lazily fetched a missing anchored
+  object and executed the attacker's helper before Python authenticated a single byte. The `.git/objects` directory is now treated as untrusted
+  bytes read by a minimal in-process reader: loose objects (zlib) and pack/idx v2 files (OFS_DELTA and REF_DELTA inside the same pack), looking up
+  only the specific object ids asked for. Each candidate is re-hashed (`sha1("<type> <size>\0" + raw)`) against the id from the trusted anchors or an
+  already authenticated parent; a missing object is an error, never a fetch. Configuration, promisor/remote/protocol settings,
+  `objects/info/alternates`, `GIT_*` variables, refs, HEAD, tags, packed-refs, `refs/replace`, grafts, shallow files and `.git` gitfiles are never
+  consulted. The detached read-only copy, anchors, exact-bytes/CRLF/submodule/symlink rules and the post-load module location check are unchanged.
+- **Bounds (csf_d7e271587bb3dc0dec7ac96f):** object size 256 KiB, compressed input 320 KiB per object, 4 MiB authenticated bytes in total,
+  16 MiB inflated work (incl. delta streams and bases), 512 objects, 512 entries per tree (2048 in total), 128 trees, delta depth 50, 32 packs,
+  200 000 objects per pack index. Inflation uses `zlib.decompressobj` with `max_length`, so a bomb is refused before it is buffered. Only commit,
+  tree and blob objects are accepted. Any malformed pack, index or object raises `ValueError`.
+- **Compatibility:** `materialize_pinned`, `load_bitrep`, `verify_*`, `TrustedObjects` and `checkout_problems` keep their signatures. An object
+  store that relied on `objects/info/alternates` (the genuine objects living in another directory) is now refused: copy or repack the objects into
+  the checkout's own `.git/objects`. sha256 repositories, pack index v1, thin/promisor packs and `.git` gitfiles are not supported.
+  `checkout_problems` (an optional working-tree audit) still uses hardened git; it is not on the import path.
+
 ## 2026-11-03 - R1-B2: BitRep commit, tree and blob identities are independent trusted anchors (csf_2549122f435d297f245f3c12)
 
 - **Behaviour change (security):** `materialize_pinned(root, pin, dest=None, *, anchors)` no longer asks the checkout's object database what the
