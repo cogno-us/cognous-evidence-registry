@@ -1,0 +1,111 @@
+{
+ "written": {
+  "claimId": "0x550d66349d5d12402670c7164f1fc1a3bc5f4e0412addc0d0a09763c896f82e8",
+  "evidenceId": "0x81a93d2ecfa0f57cf6725889a12e5e9875d2008934f3aa8a043dc8e4a2d86912",
+  "attempts": {
+   "register": 1,
+   "submitEvidence": 1
+  },
+  "errors": [
+   {
+    "op": "submitEvidence",
+    "error": "RPC timeout (injected before broadcast)"
+   }
+  ],
+  "receipts": {
+   "register": {
+    "_type": "TransactionReceipt",
+    "blockHash": "0xa45868225168a01c6254bf3791de8f6fc08467c1b03e4c2a243e8f16b80ac260",
+    "blockNumber": 2,
+    "contractAddress": null,
+    "cumulativeGasUsed": "96416",
+    "from": "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0",
+    "gasPrice": "976589698",
+    "blobGasUsed": null,
+    "blobGasPrice": null,
+    "gasUsed": "96416",
+    "hash": "0x012ef8b55d5fcbd0f1e81a3f519353c65771a0d8d3c441515db43d332b756742",
+    "index": 0,
+    "logs": [
+     {
+      "_type": "log",
+      "address": "0xD3aA556287Afe63102e5797BFDDd2A1E8DbB3eA5",
+      "blockHash": "0xa45868225168a01c6254bf3791de8f6fc08467c1b03e4c2a243e8f16b80ac260",
+      "blockNumber": 2,
+      "data": "0x666244b3a67e39a8cc32c7248ed8bafa09abae339fa95c94d714b3af4019f25a0000000000000000000000000000000000000000000000000000000000000000",
+      "index": 0,
+      "topics": [
+       "0xf1fdb936ad1dbfb2fe7306c01b01f2aac1f2a27780125e007153423b92785131",
+       "0x550d66349d5d12402670c7164f1fc1a3bc5f4e0412addc0d0a09763c896f82e8",
+       "0x000000000000000000000000ffcf8fdee72ac11b5c542428b35eef5769c409f0"
+      ],
+      "transactionHash": "0x012ef8b55d5fcbd0f1e81a3f519353c65771a0d8d3c441515db43d332b756742",
+      "transactionIndex": 0
+     }
+    ],
+    "logsBloom": "0x00000000000008000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000040000000000000000000000100000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000200000000000000000000000002000080000000000000000000000002000000000000000000000000000000000000000004000000000000",
+    "status": 1,
+    "to": "0xD3aA556287Afe63102e5797BFDDd2A1E8DbB3eA5"
+   }
+  }
+ },
+ "reconstruction": {
+  "state": {
+   "claims": {
+    "0x550d66349d5d12402670c7164f1fc1a3bc5f4e0412addc0d0a09763c896f82e8": {
+     "author": "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0",
+     "content": "0x666244b3a67e39a8cc32c7248ed8bafa09abae339fa95c94d714b3af4019f25a",
+     "parent": "0x0000000000000000000000000000000000000000000000000000000000000000",
+     "lifecycle": 1,
+     "successor": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    }
+   },
+   "evidence": {},
+   "history": [
+    {
+     "event": "Registered",
+     "id": "0x550d66349d5d12402670c7164f1fc1a3bc5f4e0412addc0d0a09763c896f82e8",
+     "blockHash": "0xa45868225168a01c6254bf3791de8f6fc08467c1b03e4c2a243e8f16b80ac260",
+     "blockNumber": 2,
+     "transactionHash": "0x012ef8b55d5fcbd0f1e81a3f519353c65771a0d8d3c441515db43d332b756742",
+     "logIndex": 0
+    }
+   ],
+   "blockNumber": 2,
+   "blockHash": "0xa45868225168a01c6254bf3791de8f6fc08467c1b03e4c2a243e8f16b80ac260",
+   "finality": "provisional"
+  },
+  "identity": {
+   "chainId": 31337,
+   "codeSha256": "0x07494f463fad2aa0031f239dd01d5dc7fd3c3c5345bc918d8bdd48aa8c82badd",
+   "domain": "0xde73d42c0f78911c2cf1e243f0f3b7569f4d35e3777a60d06790e985d433362b"
+  }
+ },
+ "deployment": {
+  "chainId": 31337,
+  "address": "0xD3aA556287Afe63102e5797BFDDd2A1E8DbB3eA5",
+  "domain": "0xde73d42c0f78911c2cf1e243f0f3b7569f4d35e3777a60d06790e985d433362b",
+  "deployBlock": 1,
+  "deployBlockHash": "0xb8cc2d97c654c68989d8e1ec6286de5a72a34412944e25dea1eea2f511f8e95f",
+  "codeSha256": "0x07494f463fad2aa0031f239dd01d5dc7fd3c3c5345bc918d8bdd48aa8c82badd",
+  "contractSourceSha256": "0x483349f7a42d0810c8b00c4ff489f2c942ea8d998e96a9b75c65aaa03381d808"
+ },
+ "signature": {
+  "accepted": true,
+  "assurance": "issuer_signature_only",
+  "audience": "cognous-ocs-vnext-s4-dev",
+  "envelope_sha256": "sha256:82917d0e8deba6b18917243777f001c257e8442ff42d68c0d2810df21233f2ce",
+  "evaluated_at": 1794073116,
+  "g1_revision": "b7d23dc7fa30359f129481149d0fdd3405dbf1b1",
+  "native_outcome": "verified",
+  "reason": "ok",
+  "report_execution_absent": [],
+  "report_overall": "abstain",
+  "report_sha256": "sha256:c59eeae66ed7d1bc2b5fbe89f1a15b67e12e20472234de0373ecbf30298c7d5a",
+  "report_subject_digest": "sha256:ff7442ddb4d7afaa06ec1c726771d2a87ab7fe569c6bc50088c0bfc6f5a1c606",
+  "snapshot_fingerprint": "sha256:36f80e18353d56d1a9d480f530ef0c98d9238b4d4bf7bef0ff04356f4b397b69",
+  "statement_digest": "sha256:a8048fee62dc84751f09405f11bdea9e0a0f11ed47bf00403d6d70440108094c",
+  "statement_type": "cognous.verifier-result.dev/1",
+  "verifier_revision_asserted": "2ffe37c5ea1255e9699972980f0cb33c06a080e2"
+ }
+}

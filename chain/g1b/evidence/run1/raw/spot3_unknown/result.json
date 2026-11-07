@@ -1,0 +1,46 @@
+{
+ "profile": "cognous-registry-verifier-artifact-profile/1-dev",
+ "outcome": "UNKNOWN",
+ "reasons": [
+  "evidence_absent_from_reconstruction",
+  "write_acknowledgement_not_confirmed"
+ ],
+ "mismatches": [],
+ "facts": {
+  "artifact_identity_matched": null,
+  "signature_valid_under_supplied_dev_snapshot": true,
+  "registry_record_observed_provisional": false
+ },
+ "report_declared_overall": "abstain",
+ "assurance": "issuer_signature_only",
+ "finality": "provisional",
+ "observation": {
+  "chain_id": 31337,
+  "contract": "0xD3aA556287Afe63102e5797BFDDd2A1E8DbB3eA5",
+  "domain": "0xde73d42c0f78911c2cf1e243f0f3b7569f4d35e3777a60d06790e985d433362b",
+  "deployed_code_sha256": "0x07494f463fad2aa0031f239dd01d5dc7fd3c3c5345bc918d8bdd48aa8c82badd",
+  "claim_id": "0x550d66349d5d12402670c7164f1fc1a3bc5f4e0412addc0d0a09763c896f82e8",
+  "evidence_id": "0xa2a048e80c39228f32c9d271e3cdbf5a25eb2ca98bb5530f106fc99fa70b312b",
+  "block_number": 2,
+  "block_hash": "0x490e126ad54c0ef4521cbb8785f664fe8fa350311c6b42e63669d82cac0392c1",
+  "confirmations": 0
+ },
+ "write_attempts": {
+  "register": 1,
+  "submitEvidence": 1
+ },
+ "write_errors": [
+  {
+   "op": "submitEvidence",
+   "error": "RPC timeout (injected before broadcast)"
+  }
+ ],
+ "nonclaims": [
+  "signature is NOT chain/domain-bound and was not verified on-chain; the statement field is an unverified commitment",
+  "snapshot fingerprint is submitter-supplied, not authenticated; signature assurance is observer-relative",
+  "relation=1 supports only the narrow claim about what the supplied bytes contain",
+  "no claim that execution occurred, was independently verified, or that the Evidence Pack is genuine",
+  "no claim that the Verifier report is correct, that the producer is authentic, or that the signer holds authority",
+  "disposable loopback chain: no durable custody, no consensus finality, no institutional authority"
+ ]
+}

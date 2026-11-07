@@ -1,0 +1,62 @@
+TAP version 13
+# This version of µWS is not compatible with your Node.js build:
+# Error: Cannot find module '../binaries/uws_linux_x64_127.node'
+# Require stack:
+# - /tmp/claude-0/-home-user/ccd68d4a-ce44-5311-af5a-04bf66a9f467/scratchpad/g0/cognous-evidence-registry/chain/node_modules/ganache/node_modules/@trufflesuite/uws-js-unofficial/src/uws.js
+# - /tmp/claude-0/-home-user/ccd68d4a-ce44-5311-af5a-04bf66a9f467/scratchpad/g0/cognous-evidence-registry/chain/node_modules/ganache/dist/node/core.js
+# Falling back to a NodeJS implementation; performance may be degraded.
+# outcome: PRESENT_PROVISIONAL  (cognous-registry-verifier-artifact-profile/1-dev; development only)
+# artifact_identity_matched: true
+# signature_valid_under_supplied_dev_snapshot: true (issuer_signature_only; observer-relative)
+# registry_record_observed_provisional: true (finality: provisional)
+# report_declared_overall: abstain (unchanged; not a Registry-verified verdict)
+# not established: durable custody, consensus finality, authority, execution, producer identity, correctness
+# outcome: MISMATCH  (cognous-registry-verifier-artifact-profile/1-dev; development only)
+# artifact_identity_matched: false
+# signature_valid_under_supplied_dev_snapshot: false (none; observer-relative)
+# registry_record_observed_provisional: true (finality: provisional)
+# report_declared_overall: null (unchanged; not a Registry-verified verdict)
+# reasons: retained_artifact_does_not_match_registered_commitments
+# mismatches: evidence_content, manifest_report_sha256
+# not established: durable custody, consensus finality, authority, execution, producer identity, correctness
+# Subtest: G1b development spot checks
+    # Subtest: 1 positive: register, submit, independent reconstruct, exact commitment match
+    ok 1 - 1 positive: register, submit, independent reconstruct, exact commitment match
+      ---
+      duration_ms: 2030.794442
+      type: 'test'
+      ...
+    # Subtest: 2 negative: one altered retained report byte is not the registered artifact
+    ok 2 - 2 negative: one altered retained report byte is not the registered artifact
+      ---
+      duration_ms: 443.651121
+      type: 'test'
+      ...
+# outcome: UNKNOWN  (cognous-registry-verifier-artifact-profile/1-dev; development only)
+# artifact_identity_matched: null
+# signature_valid_under_supplied_dev_snapshot: true (issuer_signature_only; observer-relative)
+# registry_record_observed_provisional: false (finality: provisional)
+# report_declared_overall: abstain (unchanged; not a Registry-verified verdict)
+# reasons: evidence_absent_from_reconstruction, write_acknowledgement_not_confirmed
+# not established: durable custody, consensus finality, authority, execution, producer identity, correctness
+    # Subtest: 3 unknown: failed submit acknowledgement is UNKNOWN, one attempt, no retry, no custody claim
+    ok 3 - 3 unknown: failed submit acknowledgement is UNKNOWN, one attempt, no retry, no custody claim
+      ---
+      duration_ms: 1437.560494
+      type: 'test'
+      ...
+    1..3
+ok 1 - G1b development spot checks
+  ---
+  duration_ms: 3916.611187
+  type: 'test'
+  ...
+1..1
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4482.691518
