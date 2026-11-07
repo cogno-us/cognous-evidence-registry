@@ -1,0 +1,153 @@
+{
+  "contract": "evidence-pack-verification",
+  "contract_version": "0.1.0-dev",
+  "development_only": true,
+  "subject": {
+    "name": "complete.pack.json",
+    "digest": "sha256:ff7442ddb4d7afaa06ec1c726771d2a87ab7fe569c6bc50088c0bfc6f5a1c606",
+    "canonicalization_profile": "json-sort-keys-compact-utf8-no-nan-python-semantics-v0.1"
+  },
+  "checks": [
+    {
+      "check_id": "pk.wire.strict-parse",
+      "verdict": "confirmed",
+      "examined": 1,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.retained.input-hashes",
+      "verdict": "confirmed",
+      "examined": 2,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.retained.pack-id",
+      "verdict": "confirmed",
+      "examined": 1,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.records.source-record-refs",
+      "verdict": "confirmed",
+      "examined": 46,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.identity.proposal-payload-commitment",
+      "verdict": "confirmed",
+      "examined": 1,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.identity.manifest-digest",
+      "verdict": "confirmed",
+      "examined": 1,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.identity.binding-proposal-commitment",
+      "verdict": "confirmed",
+      "examined": 1,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.identity.effect-id",
+      "verdict": "confirmed",
+      "examined": 1,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.executor.operation-commitments",
+      "verdict": "confirmed",
+      "examined": 2,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.completeness.consistency",
+      "verdict": "confirmed",
+      "examined": 3,
+      "reason": null,
+      "findings": []
+    },
+    {
+      "check_id": "pk.source.identity",
+      "verdict": "could_not_check",
+      "examined": 0,
+      "reason": "no_authenticating_mechanism",
+      "findings": []
+    }
+  ],
+  "unsupported_claims": [
+    "authenticated_producer_identity: the pack carries no signature or trust anchor",
+    "exact_source_revision_of_producers: revisions are caller-declared labels",
+    "independent_execution_verification: executor records are source-asserted by the producer",
+    "independent_custody: nothing shows who held the pack or when",
+    "independent_assessor_accountability: this is a self-run developer check",
+    "pack_semantic_validation_reexecuted: the pack's validator status is a producer-written string"
+  ],
+  "does_not_prove": [
+    "A pack whose records were coherently rewritten and recommitted is indistinguishable from a genuine one here.",
+    "Agreement between retained records is not evidence that they are genuine.",
+    "Absent executor records mean execution evidence was not supplied, not that nothing executed.",
+    "This is a verification result about one supplied file; it is not an attestation and authorizes nothing."
+  ],
+  "identities": {
+    "asserted": {
+      "replay_generation": {
+        "id": "cp2-replay-7eb7d76e-tenant-binding-dev-0.1",
+        "replay_revision": "7eb7d76eda10ca1ff997bb86853e903e57da625c",
+        "control_plane": "484fdbd297235dd24148ddb0703f2055a31eabff",
+        "moltbot_safe": "f7a55e2a8494801e49193f9f46935f0a971c248d",
+        "manifest": "fa170815ef96a54c233d0dd9da821b60debabf8b",
+        "opt_in": "caller_declared"
+      },
+      "producer_profiles": [
+        {
+          "profile_id": "control-plane-strict-tenant-stack@484fdbd2",
+          "revision": "484fdbd297235dd24148ddb0703f2055a31eabff"
+        },
+        {
+          "profile_id": "moltbot-safe-executor-producer-2.0.0@f7a55e2a",
+          "revision": "f7a55e2a8494801e49193f9f46935f0a971c248d"
+        }
+      ],
+      "pack_semantic_validation": {
+        "validator": "agent_replay_bundle.importers.import_bounded_workflow",
+        "required_revision": "7eb7d76eda10ca1ff997bb86853e903e57da625c",
+        "status": "validated_complete"
+      }
+    },
+    "measured": [],
+    "unverified": "every revision above is a producer or caller declaration; no pin authority, signature or trust mechanism exists to check it"
+  },
+  "reconstruction": {
+    "declared_status": "reconstruction_complete",
+    "source": "producer-declared"
+  },
+  "execution_evidence": {
+    "present": [
+      "execution_envelope",
+      "execution_result",
+      "destination_attempt",
+      "destination_effect"
+    ],
+    "absent": [],
+    "note": "absent kinds are unevaluated, not a measured absence of execution; present kinds are source-asserted"
+  },
+  "summary": {
+    "checks": 11,
+    "confirmed": 10,
+    "could_not_check": 1,
+    "refuted": 0
+  },
+  "overall": "abstain"
+}
