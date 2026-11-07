@@ -15,6 +15,9 @@ import { reconstruct } from '../reconstruct.mjs';
 
 export const PROFILE = 'cognous-registry-verifier-artifact-profile/1-dev';
 export const OUTCOMES = ['PRESENT_PROVISIONAL', 'MISMATCH', 'UNKNOWN', 'REFUSED'];
+// Output-only note (deliberately NOT part of NONCLAIMS, which are committed into the manifest bytes).
+export const SIGNATURE_FACTS_NOTE = 'signature facts are caller-supplied to assess(); trusted only when produced by run() via the native G1 verification; '
+  + 'they are not an independent trust root';
 export const NONCLAIMS = [
   'signature is NOT chain/domain-bound and was not verified on-chain; the statement field is an unverified commitment',
   'snapshot fingerprint is submitter-supplied, not authenticated; signature assurance is observer-relative',
@@ -162,12 +165,26 @@ export async function observe(url, dep, abi) {
   } catch (e) { return { error: String(e.message ?? e) }; }
 }
 
-/** Pure decision. No aggregate success; facts are separate. Evidence is located by the originally registered IDs. */
+/**
+ * INTERNAL composition/evaluation helper, not an independent verification interface.
+ *
+ * `signature` must be the verifier result produced by the trusted development invocation
+ * `run() -> pythonVerify() -> native G1 verification` against the supplied synthetic snapshot. It is a plain,
+ * caller-supplied object: comparing its `report_sha256`/`envelope_sha256` with the retained bytes binds the
+ * subject it CLAIMS to describe but does not authenticate the object itself. A direct caller can supply any
+ * facts, so those facts are NOT an independent trust root and `signature_valid_under_supplied_dev_snapshot`
+ * is only as trustworthy as the invocation that produced `signature`. Do not rely on `assess()` outside
+ * `run()` (or the frozen development spot checks); doing so, or exposing it as an authoritative interface,
+ * requires a separate interface decision.
+ *
+ * No aggregate success; facts are separate. Evidence is located by the originally registered IDs.
+ */
 export function assess({ retained, written, observation, signature, dep }) {
   const out = { profile: PROFILE, outcome: 'UNKNOWN', reasons: [], mismatches: [],
     facts: { artifact_identity_matched: null, signature_valid_under_supplied_dev_snapshot: Boolean(signature?.accepted),
       registry_record_observed_provisional: null },
     report_declared_overall: signature?.report_overall ?? null, assurance: signature?.assurance ?? 'none',
+    signature_facts_note: SIGNATURE_FACTS_NOTE,
     finality: observation?.state?.finality ?? null, finality_note: 'disposable local chain; not consensus finality and not custody',
     observation: { chain_id: dep.chainId, contract: dep.address, domain: dep.domain, deployed_code_sha256: dep.codeSha256,
       claim_id: written?.claimId, evidence_id: written?.evidenceId, block_number: observation?.state?.blockNumber ?? null,
@@ -233,6 +250,7 @@ export function render(result) {
     `report_declared_overall: ${result.report_declared_overall} (unchanged; not a Registry-verified verdict)`,
     result.reasons.length ? `reasons: ${result.reasons.join(', ')}` : '',
     result.mismatches.length ? `mismatches: ${result.mismatches.join(', ')}` : '',
+    `signature facts: ${result.signature_facts_note ?? SIGNATURE_FACTS_NOTE}`,
     'not established: durable custody, consensus finality, authority, execution, producer identity, correctness',
   ].filter(Boolean).join('\n');
 }
